@@ -1455,7 +1455,7 @@ classdef AntArray
         
         %% Function to normalize the currents to match input power
         function obj = normalize(obj)
-            input_pwr = inpower(obj)/2/pi;
+            input_pwr = inpower(obj)/2;
             
             fact = sqrt(input_pwr/obj.pwr);
             obj.M = obj.M(:,:)./fact;
