@@ -579,7 +579,7 @@ classdef AntArray
             den = integral2(fun, 0, pi, 0, 2*pi)/4/pi/r^2;
             
             D = 0:180/5;
-            theta0 = pi/2;
+            theta0 = pi/3;
             for phi_i=1:length(D)
                 phi0 = (D(phi_i)-90)*5*pi/180;
                 
@@ -612,7 +612,7 @@ classdef AntArray
             den = obj.inpower()/4/pi/r^2;
             
             D = 0:180/5;
-            theta0 = pi/2;
+            theta0 = pi/3;
             for phi_i=1:length(D)
                 phi0 = (D(phi_i)-90)*5*pi/180;
                 
@@ -1455,7 +1455,7 @@ classdef AntArray
         
         %% Function to normalize the currents to match input power
         function obj = normalize(obj)
-            input_pwr = inpower(obj)/4/pi;
+            input_pwr = inpower(obj)/2/pi;
             
             fact = sqrt(input_pwr/obj.pwr);
             obj.M = obj.M(:,:)./fact;
