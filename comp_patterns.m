@@ -3,7 +3,7 @@ clear
 matlabpool open
 
 % Squares
-for rem_els=16:15
+for rem_els=4:15
     % Init
     arr = AntArray(zeros(64), 60500, [], 0.84);
     arr = arr.setName(['sq_' mat2str(rem_els)]);
@@ -38,14 +38,11 @@ for rem_els=16:15
     el_ratio = num2str(length(find(tmp~=0))/numel(tmp)*100,3);
     
     arr = arr.setComments(sprintf([num2str(rem_els) ' lines removed\n' ...
-        'Elements spacing: 0.84$\\lambda$\n\\# of elements: ' el_ratio '\\%%\n' ...
-        'Adjusted impedance computations']));
+        'Elements spacing: 0.84$\\lambda$\n\\# of elements: ' el_ratio '\\%%']));
 
     % Plots
     arr.plotAntArray();
-    if rem_els ~= 13
-        arr = arr.genPattern(11000, 3000, 'XY', 30);
-    end;
+    arr = arr.genPattern(11000, 3000, 'XY', 30);
     arr = arr.genPattern([], [], 'XY-BW');
     arr = arr.E_strength(15000, 0, 0, 500);
     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);

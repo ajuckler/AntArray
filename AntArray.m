@@ -409,7 +409,7 @@ classdef AntArray
                 'setappdata(gcbf,''canceling'',1)');
             setappdata(progress, 'canceling', 0);
             
-            absc = logspace(1, ceil(log10(L)), samples);
+            absc = logspace(2, ceil(log10(L)), samples);
             oord = zeros(1, length(absc));
 
             for i=1:samples
@@ -1448,14 +1448,12 @@ classdef AntArray
             end;
             input_pwr = abs(sum(sum(sum(input_pwr(:,:,:)))));
             
-            disp(['Input power: ' num2str(input_pwr, 5) ' - ' num2str(input_pwr/4/pi, 5)]);
-            
             delete(progress);
         end
         
         %% Function to normalize the currents to match input power
         function obj = normalize(obj)
-            input_pwr = inpower(obj)/2;
+            input_pwr = inpower(obj)/2; % Divide by 2 as only radiated in half-space
             
             fact = sqrt(input_pwr/obj.pwr);
             obj.M = obj.M(:,:)./fact;
