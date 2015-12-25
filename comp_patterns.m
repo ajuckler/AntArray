@@ -3,7 +3,7 @@ clear
 matlabpool open
 
 % Squares
-for rem_els=4:15
+for rem_els=10:15
     % Init
     arr = AntArray(zeros(64), 60500, [], 0.84);
     arr = arr.setName(['sq_' mat2str(rem_els)]);
