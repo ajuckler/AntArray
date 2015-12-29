@@ -15,7 +15,7 @@ import os
 from subprocess import Popen
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:], 'i:gb', ['input=', 'gif', 'stop', 'bunch', 'delay'])
+	opts, args = getopt.getopt(sys.argv[1:], 'i:gb', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density='])
 except getopt.GetoptError as err:
 	print(err)
 	sys.exit(2)
@@ -23,6 +23,7 @@ except getopt.GetoptError as err:
 gif = False
 bunch = False
 delay = 60
+density = 150
 
 for o, a in opts:
 	if o in ('-i', '--input'):
@@ -35,6 +36,8 @@ for o, a in opts:
 		bunch = True
 	elif o in ('--delay'):
 		delay = eval(a)
+	elif o in ('--density'):
+		density = eval(a)
 	else:
 		print 'Unknown option: ' + format(o)
 		sys.exit(2)
@@ -45,26 +48,27 @@ if bunch:
 else:
 	maxval = 1
 
+if infile.endswith('_BW'):
+	infile = infile[:-len('_BW')]
+	BW = '_BW'
+else:
+	BW = ''
+
 names = []
 for i in range(0, maxval):
 	if maxval != 1:
-		filename = infile + str(i + 1)
+		filename = infile + str(i) + BW
 	else:
-		filename = infile
+		filename = infile + BW
 	if os.path.isfile(filename + '.pdf'):
-		names.append(filename + '.pdf')
-		args = ['convert_magick', filename + '.pdf', filename + '.png']
+		names.append('img/' + filename + '.png')
+		args = ['convert_magick', '-density', str(density), filename + '.pdf', names[-1]]
 		Popen(args).communicate()[0]
 		print filename + ' converted'
 
 if gif:
-	namestr = ''
-	for i in range(0, len(names) - 1):
-		namestr += names[i] + ' '
-	namestr += names[-1]
-
-	args = ['convert_magick', '-delay', str(delay), '-density', '150', '-dispose', 'background']
+	args = ['convert_magick', '-delay', str(delay), '-density', str(density), '-dispose', 'background']
 	args.extend(names)
-	args.append(infile + '.gif')
+	args.append('img/' + infile + BW + '.gif')
 	Popen(args).communicate()[0]
 	print 'gif generated'

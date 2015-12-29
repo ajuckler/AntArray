@@ -18,6 +18,10 @@ classdef AntArray
         name;           % name for the plot files
         max_XY;         % max dB scale value for XY-patterns
         max_YZ;         % max dB scale value for YZ-patterns
+        min_XY;         % min dB scale value for XY-patterns
+        min_YZ;         % min dB scale value for YZ-patterns
+        max_E_strength; % max dB scale value for E-strength plot
+        min_E_strength; % min dB scale value for E-strength plot
         dir;            % matrix of element's groups
         dir_str;        % cell array of element's groups
         comments;       % string to be printed on elements' plot
@@ -69,6 +73,10 @@ classdef AntArray
             obj.opt_win = [0,0];   
             obj.max_XY = 0;
             obj.max_YZ = 0;
+            obj.min_XY = 0;
+            obj.min_YZ = 0;
+            obj.max_E_strength = 0;
+            obj.min_E_strength = 0;
             obj.normalized = 0;
             obj.pwr = 10e-3;
             
@@ -110,6 +118,26 @@ classdef AntArray
                 obj.max_XY = val;
             elseif strcmp(pattern, 'YZ')
                 obj.max_YZ = val;
+            elseif strcmp(pattern, 'E')
+                obj.max_E_strength = val;
+            else
+                error('Unhandled pattern plane');
+            end;
+        end
+        
+        %% Function to set the minimal scale value
+        function obj = setMin(obj, pattern, val)
+            % INPUT
+            %   obj:        AntArray object
+            %   pattern:    name of the plane where the value should apply
+            %   val:        maximal value on the dB-scale
+            
+            if strcmp(pattern, 'XY')
+                obj.min_XY = val;
+            elseif strcmp(pattern, 'YZ')
+                obj.min_YZ = val;
+            elseif strcmp(pattern, 'E')
+                obj.min_E_strength = val;
             else
                 error('Unhandled pattern plane');
             end;
@@ -429,8 +457,17 @@ classdef AntArray
             xlim([absc(1) absc(end)]);
             
             view_axis = axis;
-            max_val = max(oord);
-            ylim([view_axis(3) max_val+5-mod(max_val,5)]);
+            if obj.max_E_strength ~= 0
+                max_val = obj.max_E_strength-1;
+            else
+                max_val = max(oord);
+            end;
+            if obj.min_E_strength ~= 0
+                min_val = obj.min_E_strength+1;
+            else
+                min_val = view_axis(3);
+            end;
+            ylim([min_val-5+mod(min_val,5) max_val+5-mod(max_val,5)]);
 
             title(['\textbf{Field strength along (' mat2str(z) ', ' ...
                 mat2str(y) ')}'], 'Interpreter', 'latex', 'FontSize', 24);
@@ -446,128 +483,6 @@ classdef AntArray
 
             close all;
             fprintf('\tdone\n');
-        end
-        
-        %% Function to compute the directivity
-        function obj = directivity(obj, theta)
-            if nargin < 2
-                theta = pi/2;
-            end;
-            
-            k = 2*pi/obj.c0*obj.freq;
-            
-            den = inpower(obj);
-            
-            D = 0:180/5;
-            pos = find(obj.M ~= 0);
-            
-            if mod(size(obj.M,1), 2) == 0
-                turnover = size(obj.M,1)/2 + 0.5;
-            else
-                turnover = (size(obj.M,1)+1)/2;
-            end;
-            
-            for phi_i=1:length(D)
-                phi = D(phi_i)*5*pi/180;
-                kx = k*sin(theta)*cos(phi);
-                ky = sin(theta)*cos(phi);
-                
-                num = 0;
-                for i=1:numel(pos)
-                    row = mod(i, size(obj.M,1));
-                    col = ceil(i/size(obj.M, 1));
-                    if row == 0
-                        row = size(obj.M,1);
-                    end;
-
-                    z_el1 = (turnover-row)*obj.spacing;
-                    y_el1 = (col-turnover)*obj.spacing;
-                    y = z_el1;
-                    x = y_el1;
-                    add_fact = sin(theta);
-                    num = num + obj.M(pos(i))*exp(1j*(kx*x+ky*y)*add_fact);
-                end;
-                D(phi_i) = 2*abs(num)^2/den;
-            end;
-            
-            % ========================================================================
-            % Plot
-            figure(1);
-            plot(0:5:180, D, 'LineWidth', 2);
-            hold on
-            
-            xlim([0 180]);
-            
-            title(['\textbf{Directivity at $\theta=' ...
-                num2str(theta*180/pi) '$}'], ...
-                'Interpreter', 'latex', 'FontSize', 24);
-            xlabel('$\phi$ [deg]', 'Interpreter', 'latex', 'FontSize', 22);
-            ylabel('Directivity []', 'Interpreter', 'latex', 'FontSize', 22);
-            set(gca, 'FontSize', 16);
-            
-            hold off
-        end
-        
-        %% Function to compute the directivity
-        function obj = directivity_alt(obj, theta)
-            if nargin < 2
-                theta = pi/2;
-            end;
-            
-            k = 2*pi/obj.c0*obj.freq;
-            
-            den = inpower(obj);
-            
-            D = 0:180/5;
-            pos = find(obj.M ~= 0);
-            
-            if mod(size(obj.M,1), 2) == 0
-                turnover = size(obj.M,1)/2 + 0.5;
-            else
-                turnover = (size(obj.M,1)+1)/2;
-            end;
-            
-            for phi_i=1:length(D)
-                phi = D(phi_i)*5*pi/180;
-                kx = k*sin(theta)*cos(phi);
-                ky = sin(theta)*cos(phi);
-                
-                num = 0;
-                for i=1:numel(pos)
-                    row = mod(i, size(obj.M,1));
-                    col = ceil(i/size(obj.M, 1));
-                    if row == 0
-                        row = size(obj.M,1);
-                    end;
-
-                    z_el1 = (turnover-row)*obj.spacing;
-                    y_el1 = (col-turnover)*obj.spacing;
-                    y = z_el1;
-                    x = y_el1;
-                    add_fact = sin(phi)-cos(theta)*cos(phi);
-                    num = num + obj.M(pos(i))*exp(1j*(kx*x+ky*y)*add_fact);
-                end;
-                D(phi_i) = 2*abs(num)^2/den;
-            end;
-            
-            disp(['mean = ' mean(D)]);
-            
-            % ========================================================================
-            % Plot
-            figure(1);
-            plot(0:5:180, D, 'LineWidth', 2);
-            hold on
-            
-            xlim([0 180]);
-            
-            title(['\textbf{Directivity at $\theta=' ...
-                num2str(theta*180/pi) '$}'], ...
-                'Interpreter', 'latex', 'FontSize', 24);
-            xlabel('$\phi$ [deg]', 'Interpreter', 'latex', 'FontSize', 22);
-            ylabel('Directivity []', 'Interpreter', 'latex', 'FontSize', 22);
-            set(gca, 'FontSize', 16);
-            
-            hold off
         end
         
         %% Function to compute the directivity
@@ -772,7 +687,11 @@ classdef AntArray
             if obj.max_YZ ~= 0
                 cmax = obj.max_YZ-1;
             end;
-            cmin = min(min(plotdata));
+            if obj.min_YZ ~= 0
+                cmin = obj.min_YZ+1;
+            else
+                cmin = min(min(plotdata));
+            end;
             caxis([cmin-5+mod(cmin,5) cmax+5-mod(cmax,5)]);
 
             % Adapt ticks
@@ -1072,7 +991,11 @@ classdef AntArray
             else
                 max_val = obj.max_XY-1;
             end;
-            min_val = min(min(plotdata(:,:)));
+            if obj.min_XY ~= 0
+                min_val = obj.min_XY+1;
+            else
+                min_val = min(min(plotdata(:,:)));
+            end;
             caxis([min_val-5+mod(min_val,5) max_val+5-mod(max_val,5)]);
 
             % Adapt ticks
@@ -1484,37 +1407,6 @@ classdef AntArray
             % I = I/73;
             E_r = Zc/2/pi * I*l*cos(theta)/(r^2) * (1+1/(1j*k*r)) * exp(-1j*k*r);
             E_theta = 1j*Zc*k/4/pi * I*l*sin(theta)/r * (1+1/(1j*k*r)-1/(k*r)^2) * exp(-1j*k*r);
-            % H_phi = 1j*k/4/pi * I*l*sin(theta)/r * (1+1/(1j*k*r)) * exp(-1j*k*r);
-
-            E_x = E_r*sin(theta)*cos(phi) + E_theta*cos(theta)*cos(phi);
-            E_y = E_r*sin(theta)*sin(phi) + E_theta*cos(theta)*sin(phi);
-            E_z = E_r*cos(theta) - E_theta*sin(theta); 
-        end
-        %% Function to compute the electric field component of a dipole
-        function [E_x, E_y, E_z] = E_dipole_long(l, I, f, x, y, z)
-            % Compute the electric field components generated by a dipole
-            % antenna at a certain position in space
-            %
-            % INPUT
-            %   l:      length of the dipole [m]
-            %   I:      constant current through the dipole [A]
-            %   f:      frequency of operation [Hz]
-            %   x,y,z:  position wrt the dipole centre [m]
-            
-            Zc = AntArray.Z0;    % Characteristic impedance of free space
-
-            r = sqrt(x^2+y^2+z^2);  % Convert to polar coordinates
-            theta = acos(z/r);
-            phi = atan2(y,x);       % Or atan(y/x)
-
-            lambda = AntArray.c0/f; % Wavelength
-            k = 2*pi/lambda;        % Wave number
-            
-            I = I*2*(1-cos(k*l/2))/k;
-            
-            % I = I/73;
-            E_r = Zc/2/pi * I*cos(theta)/(r^2) * (1+1/(1j*k*r)) * exp(-1j*k*r);
-            E_theta = 1j*Zc*k/4/pi * I*sin(theta)/r * (1+1/(1j*k*r)-1/(k*r)^2) * exp(-1j*k*r);
             % H_phi = 1j*k/4/pi * I*l*sin(theta)/r * (1+1/(1j*k*r)) * exp(-1j*k*r);
 
             E_x = E_r*sin(theta)*cos(phi) + E_theta*cos(theta)*cos(phi);
