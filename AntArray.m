@@ -327,7 +327,7 @@ classdef AntArray
         end
         
         %% Function to compute and plot the field pattern
-        function obj = genPattern(obj, d, L, mode, ss)
+        function obj = genPattern(obj, d, L, mode, ss, theta)
             % Compute and plot the field pattern of the antenna array
             % Behaviour depends on the "mode" parameter:
             % If mode = 'YZ':
@@ -335,6 +335,9 @@ classdef AntArray
             % If mode = 'XY':
             %    Plot the fields in the XY-plane and the field strength
             %    along the X-axis
+            % If mode = 'theta':
+            %    Plot the fields in the plane at a given angle from the
+            %    Z-axis
             %
             % INPUT
             %    obj:    AntArray object
@@ -342,6 +345,7 @@ classdef AntArray
             %    L:      Side length of the plot surface [mm]
             %    mode:   YZ or XY, see above
             %    ss:     Step size for the plot [mm]
+            %    theta:  [if mode=theta] angle wrt Z-axis [radians]
            
             L = L/1000;
             d = d/1000;
@@ -390,6 +394,22 @@ classdef AntArray
                 end;
             elseif strcmp(mode, 'XY-BW')
                 E_BW(obj);
+                fprintf('\tdone\n');
+            elseif strcmp(mode, 'theta')
+                if isempty(theta)
+                    theta = pi/4;
+                end;
+                fprintf(['\tStep size: ' mat2str(ss*1000) 'mm\n']);
+                fprintf(['\tArray size: ' mat2str(length(obj.M)*obj.spacing*1000) 'mm\n']);
+
+                E_theta(obj, d, L, ss, theta);
+                fprintf('\tdone\n');
+            elseif strcmp(mode, 'theta-BW')
+                if isempty(theta)
+                    theta = pi/4;
+                end;
+                
+                E_BW(obj, [], theta);
                 fprintf('\tdone\n');
             else
                 error('Unhandled mode');
@@ -744,18 +764,23 @@ classdef AntArray
         end
         
         %% Function to generate a BW plot from existing plot
-        function E_BW(obj, d)
+        function E_BW(obj, d, theta)
             %INPUT
             %   d:  Distance to the array [m]
             
             if nargin < 2
                 d = [];
             end;
+            if nargin < 3
+                theta = [];
+            end;
             
             attempts = 30;
             
             if ~isempty(d)
                 savname = ['pattern' obj.name '_' mat2str(d)];
+            elseif ~isempty(theta)
+                savname = ['pattern_theta_' mat2str(theta,3) obj.name];
             else
                 savname = ['pattern_XY' obj.name];
             end;
@@ -875,6 +900,10 @@ classdef AntArray
             if ~isempty(d)
                 title(['\textbf{Electric field at ', mat2str(d), 'm}'], ...
                     'Interpreter', 'latex', 'FontSize', 24);
+            elseif ~isempty(theta)
+                title(['\textbf{Electric field at $\theta=\pi\cdot' ...
+                rats(theta/pi) '$}'], ...
+                'Interpreter', 'latex', 'FontSize', 24);
             else
                 title('\textbf{Electric field in the XY plane}', ...
                     'Interpreter', 'latex', 'FontSize', 24);
@@ -901,6 +930,11 @@ classdef AntArray
                     'Interpreter', 'latex', 'FontSize', 22);
                 ylabel(['${\rm z}_{\rm pos}$ [' unit_y ']'], ...
                     'Interpreter', 'latex', 'FontSize', 22);
+            elseif ~isempty(theta)
+                xlabel(['Distance to the array centre [' unit_x ']'], 'Interpreter', ...
+                    'latex', 'FontSize', 22);
+                ylabel(['${\rm x}_{\rm pos}$ [' unit_y ']'], 'Interpreter', ...
+                    'latex', 'FontSize', 22);
             else
                 xlabel(['${\rm y}_{\rm pos}$ [' unit_x ']'], ...
                     'Interpreter', 'latex', 'FontSize', 22);
@@ -1061,6 +1095,171 @@ classdef AntArray
             set(gca, 'FontSize', 16);
 
             savname = ['pattern_XY' obj.name];
+            print_plots(gcf, savname);
+            export_dat([0 absc(1,:)./fact_L; oord(:,1)./fact_d plotdata], savname);
+            
+            delete(progress);
+            
+            close all;
+        end
+        
+        %% Function to compute and plot the fields for the theta-mode
+        function E_theta(obj, d, L, ss, theta)
+            % INPUT
+            %   obj:    AntArray object
+            %   d:      Distance to the array (maximal plot distance) [m]
+            %   L:      Side length of the plot surface [m]
+            %   ss:     Step size for the plot [m]
+            %   theta:  Angle of the plot surface wrt z-axis [radians]
+            
+            if theta > pi/2
+                theta = mod(theta, pi/2);
+            elseif theta < -pi/2
+                theta = -mod(-theta, pi/2);
+            end;
+            
+            dim1 = round(L/ss)+1;
+            dim2 = round(d/ss)+1;
+            plotdata = zeros(dim2+1, dim1+1);    % Larger to be able to plot evth
+
+            progress = waitbar(0, 'Computations in progress...',...
+                'CreateCancelBtn',...
+                'setappdata(gcbf,''canceling'',1)');
+            setappdata(progress, 'canceling', 0);
+
+            for i=1:dim2
+                x = (i-1)*ss;
+                slice = plotdata(i,:);
+                parfor j=1:dim1
+                    y_plot = (j-1)*ss - L/2;
+                    y = y_plot*sin(theta);
+                    z = y_plot*cos(theta);
+                    E = zeros(1,3);
+                    [E(1), E(2), E(3)] = E_array(obj, x, y, z);
+                    slice(j) = 20*log10(sqrt(sum(abs(E(:)).^2)));
+                end;
+                plotdata(i,:) = slice;
+                waitbar(i/dim2);
+                if getappdata(progress, 'canceling')
+                    close all;
+                    delete(progress);
+                    return;
+                end;
+            end;
+
+            waitbar(1, progress, 'Generating plots...');
+
+            % ========================================================================
+            % Generates axes
+            if L/2 < 1/100
+                fact_L = 1000;
+            elseif L/2 < 1
+                fact_L = 100;
+            else
+                fact_L = 1;
+            end;
+
+            if d < 1/100
+                fact_d = 1000;
+            elseif d < 1
+                fact_d = 100;
+            else
+                fact_d = 1;
+            end;
+
+            range_L = -L/2:ss:L/2';
+            range_L = range_L.*fact_L;
+            range_d = 0:ss:round(d/ss)*ss;
+            range_d = range_d.*fact_d;
+            [absc, oord] = meshgrid([range_L range_L(end)+ss*fact_L], ...
+                [range_d range_d(end)+ss*fact_d]);  % Larger to be able to plot evth
+
+            % Plot field
+            figure(1);
+            surf(absc, oord, plotdata, 'EdgeColor', 'none');
+            view(2);
+            colormap jet;
+            cbar_h = colorbar('eastoutside');
+
+            % Adapt color map
+            title(cbar_h, 'dB\,V/m', 'Interpreter', 'latex', 'FontSize', 16);
+            if obj.max_XY == 0
+                ln_nb = ceil(10e-2/ss);
+                max_val = max(max(plotdata(ln_nb:end,:)));
+            else
+                max_val = obj.max_XY-1;
+            end;
+            if obj.min_XY ~= 0
+                min_val = obj.min_XY+1;
+            else
+                min_val = min(min(plotdata(:,:)));
+            end;
+            caxis([min_val-5+mod(min_val,5) max_val+5-mod(max_val,5)]);
+
+            % Adapt ticks
+            if mod(L*fact_L,4) == 0
+                tick_fact_L = 4;
+            elseif mod(L*fact_L,6) == 0
+                tick_fact_L = 6;
+            else
+                tick_fact_L = 2;
+            end;
+
+            if mod(d*fact_d,4) == 0
+                tick_fact_d = 4;
+            elseif mod(d*fact_d,6) == 0
+                tick_fact_d = 6;
+            else
+                tick_fact_d = 2;
+            end;
+
+            spe_ticks_L = zeros(tick_fact_L+1,1);
+            for ii=1:length(spe_ticks_L)
+                spe_ticks_L(ii) = range_L(1) + (ii-1)*L*fact_L/tick_fact_L;
+            end;
+            spe_ticks_L_pos = spe_ticks_L+ss*fact_L/2;
+
+            spe_ticks_d = zeros(tick_fact_d+1,1);
+            for ii=1:length(spe_ticks_d)
+                spe_ticks_d(ii) = range_d(1) + (ii-1)*d*fact_d/tick_fact_d;
+            end;
+            spe_ticks_d_pos = spe_ticks_d+ss*fact_d/2;
+
+            xlim([range_L(1), range_L(end)+ss*fact_L]);
+            ylim([range_d(1), range_d(end)+ss*fact_d]);
+            set(gca, 'XTick', spe_ticks_L_pos, ...
+                'XTickLabel', spe_ticks_L);
+            set(gca, 'YTick', spe_ticks_d_pos, ...
+                'YTickLabel', spe_ticks_d);
+
+            % Set labels and title
+            title(['\textbf{Electric field at $\theta=\pi\cdot' ...
+                rats(theta/pi) '$}'], ...
+                'Interpreter', 'latex', 'FontSize', 24);
+
+            switch fact_L
+                case 1000
+                    unit_L = 'mm';
+                case 100
+                    unit_L = 'cm';
+                otherwise
+                    unit_L = 'm';
+            end;
+            switch fact_d
+                case 1000
+                    unit_d = 'mm';
+                case 100
+                    unit_d = 'cm';
+                otherwise
+                    unit_d = 'm';
+            end;
+            xlabel(['Distance to the array centre [' unit_L ']'], 'Interpreter', ...
+                'latex', 'FontSize', 22);
+            ylabel(['${\rm x}_{\rm pos}$ [' unit_d ']'], 'Interpreter', ...
+                'latex', 'FontSize', 22);
+            set(gca, 'FontSize', 16);
+
+            savname = ['pattern_theta_' mat2str(theta, 3) obj.name];
             print_plots(gcf, savname);
             export_dat([0 absc(1,:)./fact_L; oord(:,1)./fact_d plotdata], savname);
             
@@ -1398,13 +1597,15 @@ classdef AntArray
             Zc = AntArray.Z0;    % Characteristic impedance of free space
 
             r = sqrt(x^2+y^2+z^2);  % Convert to polar coordinates
+            if r < 1e-16
+                r = 1e-16;
+            end;
             theta = acos(z/r);
             phi = atan2(y,x);       % Or atan(y/x)
 
             lambda = AntArray.c0/f; % Wavelength
             k = 2*pi/lambda;        % Wave number
 
-            % I = I/73;
             E_r = Zc/2/pi * I*l*cos(theta)/(r^2) * (1+1/(1j*k*r)) * exp(-1j*k*r);
             E_theta = 1j*Zc*k/4/pi * I*l*sin(theta)/r * (1+1/(1j*k*r)-1/(k*r)^2) * exp(-1j*k*r);
             % H_phi = 1j*k/4/pi * I*l*sin(theta)/r * (1+1/(1j*k*r)) * exp(-1j*k*r);
