@@ -28,6 +28,8 @@ classdef AntArray
         
         normalized;     % Has the array been normalized?
         pwr;            % Input power [W]
+        
+        weight_ang;     % Aperture angle for weighting [rad]
     end
     methods
         %% Constructor
@@ -62,7 +64,6 @@ classdef AntArray
             end;
             
             
-            
             obj.M = M;
             obj.freq = f*10^6;
             obj.el_len = l/1000;
@@ -79,6 +80,7 @@ classdef AntArray
             obj.min_E_strength = 0;
             obj.normalized = 0;
             obj.pwr = 10e-3;
+            obj.weight_ang = pi/12;
             
             obj.dir = zeros(length(M));
             obj.dir(M~=0) = 1;
@@ -141,6 +143,21 @@ classdef AntArray
             else
                 error('Unhandled pattern plane');
             end;
+        end
+        
+        %% Function to set the aperture angle used for weighting
+        function obj = setWeightAngle(obj, val)
+           if isempty(val)
+               return;
+           end;
+           
+           if val > pi/2
+               val = pi/2;
+           elseif val < 0
+               val = 0;
+           end;
+           
+           obj.weight_ang = val;
         end
         
         %% Function to set comments to be printed on the elements' plot
@@ -343,7 +360,7 @@ classdef AntArray
             %    obj:    AntArray object
             %    d:      Distance to the array [mm]
             %    L:      Side length of the plot surface [mm]
-            %    mode:   YZ or XY, see above
+            %    mode:   YZ, XY or theta see above
             %    ss:     Step size for the plot [mm]
             %    theta:  [if mode=theta] angle wrt Z-axis [radians]
            
@@ -503,6 +520,88 @@ classdef AntArray
 
             close all;
             fprintf('\tdone\n');
+        end
+        
+        %% Weighting function
+        function w = weight(obj, mode, d)
+            % Get the weight of the realized pattern
+            %
+            % INPUT
+            %   obj:    AntArray object
+            %   mode:   XY, YZ or theta, see explanation in genPattern()
+            %   d:      (optional) distance of the YZ pattern [mm]
+            %           OR theta angle [rad]
+            
+            w = 0;
+            
+            if strcmp(mode, 'XY')
+                savname = ['pattern_XY' obj.name];
+                mode = 0;
+            elseif strcmp(mode, 'YZ')
+                if isempty(d)
+                    error('Parameter d is required for this mode');
+                end;
+                savname = ['pattern' obj.name '_' mat2str(d/1000)];
+                mode = 1;
+            elseif strcmp(mode, 'theta')
+                if isempty(d)
+                    error('Parameter d is required for this mode');
+                end;
+                savname = ['pattern_theta_' mat2str(d, 3) obj.name];
+                mode = 0;
+            else
+                error('Invalid mode parameter');
+            end;
+            
+            filename = AntArray.openFile(savname);
+            if filename == 0
+                return;
+            end;
+            
+            A = dlmread(filename);
+            
+            x_dev = A(1,2:end-1).*1000; % Convert to mm
+            A = A(2:end-1, 2:end-1);
+            
+            ss = abs(x_dev(2) - x_dev(1));
+            
+            if mode==0
+                elW = zeros(size(A,1), floor(size(A,2)/2));
+                
+                for i=1:size(elW,2)
+                    elW(round(i/tan(obj.weight_ang/2)):end,i) = 1;
+                end;
+                
+                elW = [elW(:,end:-1:1) ones(size(elW,1),1) elW];
+            elseif mode==1
+                elW = zeros(ceil(size(A,1)/2));
+                
+                r = d*tan(obj.weight_ang/2);
+                
+                elW(1, 1:min(end, round(r/ss)+1)) = 1;
+                
+                for i=1:min(size(elW,1), floor(r/ss))
+                    maxval = round(sqrt(r^2-(i*ss)^2)/ss)+1;
+                    if maxval < 1e-6
+                        continue;
+                    end;
+                    if maxval > size(elW,1)
+                        elW(i+1, 1:end) = 1;
+                    else
+                        elW(i+1, 1:maxval) = 1;
+                    end;
+                end;
+                elW(elW'==1) = 1;
+
+                elW = [elW(end:-1:2,end:-1:2) elW(end:-1:2,:);
+                        elW(:,end:-1:2) elW];
+            end;
+            
+            weightM = zeros(size(A,1), size(A,2));
+            weightM(A>obj.min_E) = 1;
+            weightM(elW ~= 1) = 0;
+            w = sum(sum(weightM));
+            
         end
         
         %% Function to compute the directivity
@@ -1613,6 +1712,42 @@ classdef AntArray
             E_x = E_r*sin(theta)*cos(phi) + E_theta*cos(theta)*cos(phi);
             E_y = E_r*sin(theta)*sin(phi) + E_theta*cos(theta)*sin(phi);
             E_z = E_r*cos(theta) - E_theta*sin(theta); 
+        end
+        
+        %% Open file
+        function filename = openFile(savname)
+            attempts = 30;
+            
+            date_n = datenum(date);
+            date_v = datevec(date_n);
+            dirpath = cell(1,3);
+            for i=1:3
+                dirpath{i} = mat2str(date_v(i));
+            end;
+            dirpath = sprintf('%s', dirpath{:});
+            dirpath = [dirpath '/dat'];
+            
+            filename = [dirpath '/' savname '.dat'];
+            
+            while (~exist(dirpath, 'dir') || ~exist(filename, 'file')) && attempts > 0
+                date_n = addtodate(date_n, -1, 'day');
+                attempts = attempts-1;
+                
+                date_v = datevec(date_n);
+                dirpath = cell(1,3);
+                for i=1:3
+                    dirpath{i} = mat2str(date_v(i));
+                end;
+                dirpath = sprintf('%s', dirpath{:});
+                dirpath = [dirpath '/dat'];
+                
+                filename = [dirpath '/' savname '.dat'];
+            end;
+            
+            if attempts == 0
+                warning(['File ' savname ' not found, skipped\n']);
+                filename = 0;
+            end; 
         end
     end
     methods (Static, Access = 'public')
