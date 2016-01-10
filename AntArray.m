@@ -80,7 +80,7 @@ classdef AntArray
             obj.min_E_strength = 0;
             obj.normalized = 0;
             obj.pwr = 10e-3;
-            obj.weight_ang = pi/12;
+            obj.weight_ang = pi/18; % 10°
             
             obj.dir = zeros(length(M));
             obj.dir(M~=0) = 1;
@@ -604,6 +604,207 @@ classdef AntArray
             
         end
         
+        %% Plot weighting function
+        function plotWeight(obj, mode, d)
+            % Get the weight of the realized pattern
+            %
+            % INPUT
+            %   obj:    AntArray object
+            %   mode:   XY, YZ or theta, see explanation in genPattern()
+            %   d:      (optional) distance of the YZ pattern [mm]
+            %           OR theta angle [rad]
+            
+            if strcmp(mode, 'XY')
+                savname = ['pattern_XY' obj.name];
+                mode = 0;
+            elseif strcmp(mode, 'YZ')
+                if isempty(d)
+                    error('Parameter d is required for this mode');
+                end;
+                savname = ['pattern' obj.name '_' mat2str(d/1000)];
+                mode = 1;
+            elseif strcmp(mode, 'theta')
+                if isempty(d)
+                    error('Parameter d is required for this mode');
+                end;
+                savname = ['pattern_theta_' mat2str(d, 3) obj.name];
+                mode = 0;
+            else
+                error('Invalid mode parameter');
+            end;
+            
+            filename = AntArray.openFile(savname);
+            if filename == 0
+                return;
+            end;
+            
+            A = dlmread(filename);
+            
+            x_dev = A(1,2:end-1).*1000;
+            y_dev = A(2:end-1,1)'.*1000; % Convert to mm
+            A = A(2:end-1, 2:end-1);
+            
+            ss = abs(x_dev(2) - x_dev(1));
+            
+            if mode==0
+                elW = zeros(size(A,1), floor(size(A,2)/2));
+                
+                for i=1:size(elW,2)
+                    elW(round(i/tan(obj.weight_ang/2)):end,i) = 1;
+                end;
+                
+                elW = [elW(:,end:-1:1) ones(size(elW,1),1) elW];
+            elseif mode==1
+                elW = zeros(ceil(size(A,1)/2));
+                
+                r = d*tan(obj.weight_ang/2);
+                
+                elW(1, 1:min(end, round(r/ss)+1)) = 1;
+                
+                for i=1:min(size(elW,1), floor(r/ss))
+                    maxval = round(sqrt(r^2-(i*ss)^2)/ss)+1;
+                    if maxval < 1e-6
+                        continue;
+                    end;
+                    if maxval > size(elW,1)
+                        elW(i+1, 1:end) = 1;
+                    else
+                        elW(i+1, 1:maxval) = 1;
+                    end;
+                end;
+                elW(elW'==1) = 1;
+
+                elW = [elW(end:-1:2,end:-1:2) elW(end:-1:2,:);
+                        elW(:,end:-1:2) elW];
+            end;
+            
+            % ========================================================================
+            % Plot
+            x_dev = x_dev./1000; % Reconvert to m
+            y_dev = y_dev./1000;
+            plotdata = [elW zeros(size(elW,1),1); zeros(1,size(elW,2)+1)];
+            % Generate axes
+            if x_dev(end) < 1/100
+                fact_x = 1000;
+            elseif x_dev(end) < 1
+                fact_x = 100;
+            else
+                fact_x = 1;
+            end;
+            if y_dev(end) < 1/100
+                fact_y = 1000;
+            elseif y_dev(end) < 1
+                fact_y = 100;
+            else
+                fact_y = 1;
+            end;
+
+            range_x = x_dev.*fact_x;
+            range_y = y_dev.*fact_y;
+            ss_x = x_dev(2) - x_dev(1);
+            ss_y = y_dev(2) - y_dev(1);
+            [absc, oord] = meshgrid([range_x range_x(end)+ss_x*fact_x], ...
+                [range_y range_y(end)+ss_y*fact_y]);  % Larger to be able to plot evth
+
+            % Plot field
+            figure(1);
+            surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
+                'LineStyle', 'none');
+            view(2);
+            hold on;
+            colormap gray;
+            colorbar('eastoutside');
+
+            % Adapt color map
+            caxis([0 1]);
+
+            % Adapt ticks
+            if mod(2*x_dev(end)*fact_x,4) == 0
+                tick_fact_x = 4;
+            elseif mod(2*x_dev(end)*fact_x,6) == 0
+                tick_fact_x = 6;
+            else
+                tick_fact_x = 2;
+            end;
+            if mod(2*y_dev(end)*fact_y,4) == 0
+                tick_fact_y = 4;
+            elseif mod(2*y_dev(end)*fact_y,6) == 0
+                tick_fact_y = 6;
+            else
+                tick_fact_y = 2;
+            end;
+
+            spe_ticks_x = zeros(tick_fact_x+1,1);
+            for ii=1:length(spe_ticks_x)
+                spe_ticks_x(ii) = range_x(1) + (ii-1)*2*x_dev(end)*fact_x/tick_fact_x;
+            end;
+            spe_ticks_pos_x = spe_ticks_x+ss_x*fact_x/2;
+            spe_ticks_y = zeros(tick_fact_y+1,1);
+            for ii=1:length(spe_ticks_y)
+                spe_ticks_y(ii) = range_y(1) + (ii-1)*2*y_dev(end)*fact_y/tick_fact_y;
+            end;
+            spe_ticks_pos_y = spe_ticks_y+ss_y*fact_y/2;
+
+            xlim([range_x(1), range_x(end)+ss_x*fact_x]);
+            ylim([range_y(1), range_y(end)+ss_y*fact_y]);
+            set(gca, 'XTick', spe_ticks_pos_x, ...
+                'XTickLabel', spe_ticks_x);
+            set(gca, 'YTick', spe_ticks_pos_y, ...
+                'YTickLabel', spe_ticks_y);
+
+            % Set labels and title
+            if mode == 1
+                title(['\textbf{Electric field at ', mat2str(d), 'm}'], ...
+                    'Interpreter', 'latex', 'FontSize', 24);
+            elseif mode == 0 && ~isempty(d)
+                title(['\textbf{Electric field at $\theta=\pi\cdot' ...
+                rats(d/pi) '$}'], ...
+                'Interpreter', 'latex', 'FontSize', 24);
+            else
+                title('\textbf{Electric field in the XY plane}', ...
+                    'Interpreter', 'latex', 'FontSize', 24);
+            end;
+            
+            switch fact_x
+                case 1000
+                    unit_x = 'mm';
+                case 100
+                    unit_x = 'cm';
+                otherwise
+                    unit_x = 'm';
+            end;
+            switch fact_y
+                case 1000
+                    unit_y = 'mm';
+                case 100
+                    unit_y = 'cm';
+                otherwise
+                    unit_y = 'm';
+            end;
+            if mode == 1
+                xlabel(['${\rm y}_{\rm pos}$ [' unit_x ']'], ...
+                    'Interpreter', 'latex', 'FontSize', 22);
+                ylabel(['${\rm z}_{\rm pos}$ [' unit_y ']'], ...
+                    'Interpreter', 'latex', 'FontSize', 22);
+            elseif mode == 0 && ~isempty(d)
+                xlabel(['Distance to the array centre [' unit_x ']'], 'Interpreter', ...
+                    'latex', 'FontSize', 22);
+                ylabel(['${\rm x}_{\rm pos}$ [' unit_y ']'], 'Interpreter', ...
+                    'latex', 'FontSize', 22);
+            else
+                xlabel(['${\rm y}_{\rm pos}$ [' unit_x ']'], ...
+                    'Interpreter', 'latex', 'FontSize', 22);
+                ylabel(['${\rm x}_{\rm pos}$ [' unit_y ']'], ...
+                    'Interpreter', 'latex', 'FontSize', 22);
+            end;
+            set(gca, 'FontSize', 16);
+            
+            print_plots(gcf, [savname '_weight']);
+            
+            close all;
+            
+        end
+        
         %% Function to compute the directivity
         function obj = directivity_sph(obj)
             r = 50000;
@@ -874,8 +1075,6 @@ classdef AntArray
                 theta = [];
             end;
             
-            attempts = 30;
-            
             if ~isempty(d)
                 savname = ['pattern' obj.name '_' mat2str(d)];
             elseif ~isempty(theta)
@@ -884,35 +1083,9 @@ classdef AntArray
                 savname = ['pattern_XY' obj.name];
             end;
             
-            date_n = datenum(date);
-            date_v = datevec(date_n);
-            dirpath = cell(1,3);
-            for i=1:3
-                dirpath{i} = mat2str(date_v(i));
-            end;
-            dirpath = sprintf('%s', dirpath{:});
-            dirpath = [dirpath '/dat'];
-            
-            filename = [dirpath '/' savname '.dat'];
-            
-            while (~exist(dirpath, 'dir') || ~exist(filename, 'file')) && attempts > 0
-                date_n = addtodate(date_n, -1, 'day');
-                attempts = attempts-1;
-                
-                date_v = datevec(date_n);
-                dirpath = cell(1,3);
-                for i=1:3
-                    dirpath{i} = mat2str(date_v(i));
-                end;
-                dirpath = sprintf('%s', dirpath{:});
-                dirpath = [dirpath '/dat'];
-                
-                filename = [dirpath '/' savname '.dat'];
-            end;
-            
-            if attempts == 0
-                sprintf(['\nFile ' savname ' not found, skipped\n']);
-                return
+            filename = AntArray.openFile(savname);
+            if filename == 0
+                return;
             end;
             
             A = dlmread(filename);
@@ -997,14 +1170,14 @@ classdef AntArray
 
             % Set labels and title
             if ~isempty(d)
-                title(['\textbf{Electric field at ', mat2str(d), 'm}'], ...
+                title(['\textbf{Desired electric field at ', mat2str(d), 'm}'], ...
                     'Interpreter', 'latex', 'FontSize', 24);
             elseif ~isempty(theta)
-                title(['\textbf{Electric field at $\theta=\pi\cdot' ...
+                title(['\textbf{Desired electric field at $\theta=\pi\cdot' ...
                 rats(theta/pi) '$}'], ...
                 'Interpreter', 'latex', 'FontSize', 24);
             else
-                title('\textbf{Electric field in the XY plane}', ...
+                title('\textbf{Desired electric field in the XY plane}', ...
                     'Interpreter', 'latex', 'FontSize', 24);
             end;
             
