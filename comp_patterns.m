@@ -29,7 +29,7 @@ for sizes=[60 64]
     % Plots
 %     arr.plotAntArray();
 %     arr = arr.genPattern(11000, 3000, 'theta', 30, pi/4);
-%     arr = arr.genPattern([], [], 'theta-BW', [], pi/4);
+    arr = arr.genPattern([], [], 'theta-BW', [], pi/4);
 %     arr = arr.genPattern(11000, 3000, 'XY', 30);
 %     arr = arr.genPattern([], [], 'XY-BW');
     if sizes == 60
