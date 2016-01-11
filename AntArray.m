@@ -614,6 +614,10 @@ classdef AntArray
             %   d:      (optional) distance of the YZ pattern [mm]
             %           OR theta angle [rad]
             
+            if nargin < 3
+                d = [];
+            end;
+            
             if strcmp(mode, 'XY')
                 savname = ['pattern_XY' obj.name];
                 mode = 0;

@@ -7,7 +7,7 @@ else
 end;
 
 % Array containing the weights
-wArr = zeros(16,6);
+wArr = zeros(16,7);
 
 % Uniform
 for sizes=[60 64]
@@ -28,14 +28,16 @@ for sizes=[60 64]
     
     % Plots
 %     arr.plotAntArray();
-%     arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
-%     arr = arr.genPattern([], [], 'theta-BW', [], 0);
+%     arr = arr.genPattern(11000, 3000, 'theta', 30, pi/4);
+%     arr = arr.genPattern([], [], 'theta-BW', [], pi/4);
 %     arr = arr.genPattern(11000, 3000, 'XY', 30);
 %     arr = arr.genPattern([], [], 'XY-BW');
     if sizes == 60
         wArr(1,1) = arr.weight('XY');
+        wArr(1,2) = arr.weight('theta', pi/4);
     else
         wArr(2,1) = arr.weight('XY');
+        wArr(2,2) = arr.weight('theta', pi/4);
     end;
 %     arr = arr.E_strength(15000, 0, 0, 500);
 %     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
@@ -141,11 +143,11 @@ for rem_els=0:15
     % Plots
 %     arr.plotAntArray();
 %     arr = arr.genPattern(11000, 3000, 'theta', 30, pi/4);
-%     arr = arr.genPattern([], [], 'theta-BW', [], 0);
-    wArr(rem_els+1,2) = arr.weight('theta', pi/4);
+    arr = arr.genPattern([], [], 'theta-BW', [], pi/4);
+    wArr(rem_els+1,3) = arr.weight('theta', pi/4);
 %     arr = arr.genPattern(11000, 3000, 'XY', 30);
 %     arr = arr.genPattern([], [], 'XY-BW');
-    wArr(rem_els+1,3) = arr.weight('XY');
+    wArr(rem_els+1,4) = arr.weight('XY');
 %     arr = arr.E_strength(15000, 0, 0, 500);
 %     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
 %     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
@@ -194,10 +196,10 @@ for rem_els=0:15
 %     arr.plotAntArray();
 %     arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
 %     arr = arr.genPattern([], [], 'theta-BW', [], 0);
-    wArr(rem_els+1,4) = arr.weight('theta', 0);
+    wArr(rem_els+1,5) = arr.weight('theta', 0);
 %     arr = arr.genPattern(11000, 3000, 'XY', 30);
 %     arr = arr.genPattern([], [], 'XY-BW');
-    wArr(rem_els+1,5) = arr.weight('XY');
+    wArr(rem_els+1,6) = arr.weight('XY');
 %     arr = arr.E_strength(15000, 0, 0, 500);
 %     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
 %     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
@@ -247,7 +249,7 @@ for rem_els=0:15
 %     arr.plotAntArray();
 %     arr = arr.genPattern(11000, 3000, 'XY', 30);
 %     arr = arr.genPattern([], [], 'XY-BW');
-    wArr(rem_els+1,6) = arr.weight('XY');
+    wArr(rem_els+1,7) = arr.weight('XY');
 %     arr = arr.E_strength(15000, 0, 0, 500);
 %     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
 %     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
