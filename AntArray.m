@@ -1,5 +1,5 @@
 %
-% Copyright 2015, Antoine JUCKLER
+% Copyright 2015-2016, Antoine JUCKLER
 %
 
 classdef AntArray
@@ -7,7 +7,7 @@ classdef AntArray
         c0 = 299792458; % Speed of light in free space
         Z0 = 119.9169832*pi; % Impedance of free space
         opt_pts = 51;	% Number of discretization steps in one dimension
-        min_E = -1.3;   % Minimal electric field for reception
+        min_E = -1.3;   % Minimal electric field for reception [dB]
     end
     properties (GetAccess='public', SetAccess='private')
         M;              % matrix of elements' excitation
