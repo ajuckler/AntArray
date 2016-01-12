@@ -572,11 +572,23 @@ classdef AntArray
                     elW(round(i/tan(obj.weight_ang/2)):end,i) = 1;
                 end;
                 
+                hwidth = size(obj.M,1)/2*obj.spacing*1000; % Convert to mm
+                hwidth = floor(hwidth/ss);
+                
+                elW(1:end,1:hwidth-1) = 1;
+                
                 elW = [elW(:,end:-1:1) ones(size(elW,1),1) elW];
             elseif mode==1
                 elW = zeros(ceil(size(A,1)/2));
                 
-                r = d*tan(obj.weight_ang/2);
+                r1 = floor(size(obj.M,1)*obj.spacing*1000/ss);
+                intersect = r1/tan(obj.weight_ang/2);
+                
+                if d <= intersect
+                    r = r1;
+                else
+                    r = d*tan(obj.weight_ang/2);
+                end;
                 
                 elW(1, 1:min(end, round(r/ss)+1)) = 1;
                 
@@ -656,6 +668,11 @@ classdef AntArray
                 for i=1:size(elW,2)
                     elW(round(i/tan(obj.weight_ang/2)):end,i) = 1;
                 end;
+                
+                hwidth = size(obj.M,1)/2*obj.spacing*1000; % Convert to mm
+                hwidth = floor(hwidth/ss);
+                
+                elW(1:end,1:hwidth-1) = 1;
                 
                 elW = [elW(:,end:-1:1) ones(size(elW,1),1) elW];
             elseif mode==1
@@ -1041,7 +1058,7 @@ classdef AntArray
                 'YTickLabel', spe_ticks);
 
             % Set labels and title
-            title(['\textbf{Electric field at ', mat2str(d), 'm}'], ...
+            title(['\textbf{Electric field at ', mat2str(d), '\,m}'], ...
                 'Interpreter', 'latex', 'FontSize', 24);
 
             switch fact
