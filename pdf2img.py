@@ -5,19 +5,19 @@
 # Antoine Juckler
 #
 # pdf2img.py
-# Last modified: 2016/01/12
+# Last modified: 2016/01/13
 # ***************************
 
 import getopt
 import sys
 import os
 import re
-import Math
+import math
 
 from subprocess import Popen
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta='])
+	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta=', 'repeat'])
 except getopt.GetoptError as err:
 	print(err)
 	sys.exit(2)
@@ -30,6 +30,8 @@ infile = ""
 fixed = False
 theta = 0
 ang = False
+repeat = False
+fixed_dist = ''
 
 for o, a in opts:
 	if o in ('-i', '--input'):
@@ -48,8 +50,10 @@ for o, a in opts:
 		fixed = True
 	elif o in('-t', '--theta'):
 		if a:
-			theta = eval(a.replace('pi', 'Math.pi'))
+			theta = eval(a.replace('pi', 'math.pi'))
 		ang = True
+	elif o in ('--repeat'):
+		repeat = True
 	else:
 		print 'Unknown option: ' + format(o)
 		sys.exit(2)
@@ -63,36 +67,55 @@ if infile == "":
 	sys.exit(2)
 
 # Run
+if not os.path.exists("img"):  # Check if dir exists and create it
+	os.makedirs("img")
+
 if bunch:
 	maxval = 20
 else:
 	maxval = 1
 
-if infile.endswith('_BW'):
+if infile.endswith('_BW'):  # Check if BW pattern
 	infile = infile[:-len('_BW')]
 	BW = '_BW'
 else:
 	BW = ''
 
 names = []
+currang = 0
+startang = ''
+infile1 = ''
+infile2 = ''
 
-if theta != 0 and bunch:
+if theta != 0 and bunch:  # Create list of files, for theta patterns
 	startang = re.search("theta\_([0-9\.]+)\_", infile).group(1)
-	infile1 = infile[:infile.find("theta")]
-	infile2 = infile[infile.find("theta") + len(startang):]
+	infile1 = infile[:infile.find("theta_") + len("theta_")]
+	infile2 = infile[infile.find("theta_") + len("theta_" + startang):]
+
+	startang = eval(startang)
 
 	for i in range(0, maxval):
 		currang = startang + theta * i
-		if currang > Math.pi / 2:
+		if currang > math.pi / 2:
 			break
-		names.append('img/' + infile1 + str("{0:.2f}".format(currang) + infile2 + '.png'))
-else:
+		elif currang > 1:
+			currang_s = str("{0:.2f}".format(currang))
+		else:
+			currang_s = str("{0:.3f}".format(currang))
+		if "." in currang_s:
+			while currang_s[-1] == '0':
+				currang_s = currang_s[:-1]
+			if currang_s[-1] == '.':
+				currang_s = currang_s[:-1]
+
+		filename = infile1 + currang_s + infile2 + BW
+		if os.path.isfile(filename + '.pdf'):
+			names.append(filename)
+else:  # Create list of files, for non-theta patterns
 	if fixed and re.search("\_[0-9]+$", infile) != None:
 		m = re.search("\_[0-9]+$", infile)
 		fixed_dist = m.group(0)
 		infile = infile[:-len(fixed_dist)]
-	else:
-		fixed_dist = ''
 
 	for i in range(0, maxval):
 		if maxval != 1:
@@ -100,14 +123,42 @@ else:
 		else:
 			filename = infile + fixed_dist + BW
 
-for i in range(0, len(names)):
-	if os.path.isfile(filename + '.pdf'):
-		names.append('img/' + filename + '.png')
-		args = ['convert_magick', '-density', str(density), filename + '.pdf', names[i]]
-		Popen(args).communicate()[0]
-		print filename + ' converted'
+		if os.path.isfile(filename + '.pdf'):
+			names.append(filename)
 
-if gif:
+for i in range(0, len(names)):  # Convert to PNG
+	args = ['convert_magick', '-density', str(density), names[i] + '.pdf', 'img/' + names[i] + '.png']
+	Popen(args).communicate()[0]
+	print names[i] + ' converted'
+
+if gif:  # Convert ot GIF
+	if repeat and theta != 0:  # If theta, add more files in order to make a cyclic gif
+		namesadd = []
+		invdir = True
+		effang = currang
+		maxang = currang
+		pos = len(names) - 1
+		while effang < 2 * math.pi + startang - theta:
+			if invdir:
+				pos -= 1
+			else:
+				pos += 1
+
+			if pos < 0:
+				invdir = not invdir
+				pos += 2
+			elif pos > len(names) - 1:
+				invdir = not invdir
+				pos -= 2
+
+			effang += theta
+
+			namesadd.append(names[pos])
+		names.extend(namesadd)
+
+	for i in range(0, len(names)):
+		names[i] = 'img/' + names[i] + '.png'
+
 	args = ['convert_magick', '-delay', str(delay), '-density', str(density), '-dispose', 'background']
 	args.extend(names)
 	args.append('img/' + infile + fixed_dist + BW + '.gif')

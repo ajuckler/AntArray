@@ -25,10 +25,10 @@ arr = arr.setComments(sprintf('Elements spacing: 0.84$\\lambda$'));
 
 % Plots
 arr.plotAntArray();
-for ang=0:pi/12:pi/2
-    fprintf(['Current angle: ' rats(ang/pi) '$\\pi$']);
-    arr = arr.genPattern(11000, 3000, 'theta', 30, ang);
-    arr = arr.genPattern([], [], 'theta-BW', [], ang);
+for ang=1:2:11
+    disp(['Current angle: ' rats(ang/24) 'pi']);
+    arr = arr.genPattern(11000, 3000, 'theta', 30, ang*pi/24);
+    arr = arr.genPattern([], [], 'theta-BW', [], ang*pi/24);
 end;
 
 
@@ -71,10 +71,10 @@ for rem_els=9
 
     % Plots
     arr.plotAntArray();
-    for ang=0:pi/12:pi/2
-        fprintf(['Current angle: ' rats(ang/pi) '$\\pi$']);
-        arr = arr.genPattern(11000, 3000, 'theta', 30, ang);
-        arr = arr.genPattern([], [], 'theta-BW', [], ang);
+    for ang=1:2:11
+        disp(['Current angle: ' rats(ang/24) 'pi']);
+        arr = arr.genPattern(11000, 3000, 'theta', 30, ang*pi/24);
+        arr = arr.genPattern([], [], 'theta-BW', [], ang*pi/24);
     end;
 end;
 
