@@ -131,7 +131,7 @@ for i in range(0, len(names)):  # Convert to PNG
 	Popen(args).communicate()[0]
 	print names[i] + ' converted'
 
-if gif:  # Convert ot GIF
+if gif:  # Convert to GIF
 	if repeat and theta != 0:  # If theta, add more files in order to make a cyclic gif
 		namesadd = []
 		invdir = True

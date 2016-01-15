@@ -7,6 +7,9 @@ function print_plots(h, path) % h must be gcf from plot
     dirpath = cell(1,3);
     for i=1:3
         dirpath{i} = mat2str(date_v(i));
+         if numel(dirpath{i}) < 2
+            dirpath{i} = ['0' dirpath{i}];
+        end;
     end;
     dirpath = sprintf('%s', dirpath{:});
     

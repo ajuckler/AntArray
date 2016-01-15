@@ -7,6 +7,9 @@ function export_dat(h, path)
     dirpath = cell(1,3);
     for i=1:3
         dirpath{i} = mat2str(date_v(i));
+        if numel(dirpath{i}) < 2
+            dirpath{i} = ['0' dirpath{i}];
+        end;
     end;
     dirpath = sprintf('%s', dirpath{:});
     
