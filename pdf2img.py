@@ -5,7 +5,7 @@
 # Antoine Juckler
 #
 # pdf2img.py
-# Last modified: 2016/01/13
+# Last modified: 2016/01/18
 # ***************************
 
 import getopt
@@ -17,7 +17,7 @@ import math
 from subprocess import Popen
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta=', 'repeat'])
+	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta=', 'repeat', 'start='])
 except getopt.GetoptError as err:
 	print(err)
 	sys.exit(2)
@@ -32,6 +32,7 @@ theta = 0
 ang = False
 repeat = False
 fixed_dist = ''
+start = 0
 
 for o, a in opts:
 	if o in ('-i', '--input'):
@@ -54,16 +55,18 @@ for o, a in opts:
 		ang = True
 	elif o in ('--repeat'):
 		repeat = True
+	elif o in ('--start'):
+		start = eval(a)
 	else:
 		print 'Unknown option: ' + format(o)
 		sys.exit(2)
 
-if bunch and theta == 0:
-	print 'Bunch parameter specified, but no theta value given'
-	sys.exit(2)
-
 if infile == "":
 	print 'No input file specified'
+	sys.exit(2)
+
+if bunch and theta == 0 and 'theta' in infile:
+	print 'Bunch parameter specified, but no theta value given'
 	sys.exit(2)
 
 # Run
@@ -119,7 +122,7 @@ else:  # Create list of files, for non-theta patterns
 
 	for i in range(0, maxval):
 		if maxval != 1:
-			filename = infile + str(i) + fixed_dist + BW
+			filename = infile + str(i + start) + fixed_dist + BW
 		else:
 			filename = infile + fixed_dist + BW
 

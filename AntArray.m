@@ -613,7 +613,6 @@ classdef AntArray
             weightM(A>obj.min_E) = 1;
             weightM(elW ~= 1) = 0;
             w = sum(sum(weightM));
-            
         end
         
         %% Plot weighting function
