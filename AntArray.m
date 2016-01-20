@@ -12,6 +12,7 @@ classdef AntArray
     properties (GetAccess='public', SetAccess='private')
         M;              % matrix of elements' excitation
         freq;           % frequency of operation
+        norm_freq;      % frequency used for normalization
         el_len;         % dipoles' length
         spacing;        % inter-element spacing
         opt_win;        % side length and depth of optimization window
@@ -85,6 +86,7 @@ classdef AntArray
             obj.dir = zeros(length(M));
             obj.dir(M~=0) = 1;
             obj.dir_str{1} = 'Unknown';
+            obj.norm_freq = obj.freq;
         end
         
         %% Function to set the optimization window dimension
@@ -132,7 +134,7 @@ classdef AntArray
             % INPUT
             %   obj:        AntArray object
             %   pattern:    name of the plane where the value should apply
-            %   val:        maximal value on the dB-scale
+            %   val:        minimal value on the dB-scale
             
             if strcmp(pattern, 'XY')
                 obj.min_XY = val;
@@ -147,23 +149,38 @@ classdef AntArray
         
         %% Function to set the aperture angle used for weighting
         function obj = setWeightAngle(obj, val)
-           if isempty(val)
+            % INPUT
+            %   obj:        AntArray object
+            %   val:        Weighting angle [rad]
+            if isempty(val)
                return;
-           end;
-           
-           if val > pi/2
+            end;
+
+            if val > pi/2
                val = pi/2;
-           elseif val < 0
+            elseif val < 0
                val = 0;
-           end;
-           
-           obj.weight_ang = val;
+            end;
+
+            obj.weight_ang = val;
         end
         
         %% Function to set comments to be printed on the elements' plot
         function obj = setComments(obj, comments)
+            % INPUT
+            %   obj:        AntArray object
+            %   comments:   Comments to be displayed on the plot
             obj.comments = comments;
         end
+        
+        %% Function to set the frequency used for normalization
+        function obj = setNormFreq(obj, freq)
+            % INPUT
+            %   obj:        AntArray object
+            %   freq:       Frequency used at normalization [MHz]
+            obj.norm_freq = freq;
+            obj.normalized = 0;
+        end;
         
         %% Function to add focused antenna pattern to the array
         function obj = adaptArray(obj, M, x, y, z)
@@ -617,7 +634,7 @@ classdef AntArray
         
         %% Plot weighting function
         function plotWeight(obj, mode, d)
-            % Get the weight of the realized pattern
+            % Plot the pattern of realized with the wieghting angle
             %
             % INPUT
             %   obj:    AntArray object
@@ -1770,11 +1787,11 @@ classdef AntArray
             
         end
         
-        %% Function to compute the array impedance
+        %% Function to compute the array input power
         function input_pwr = inpower(obj)
             [elcol, elrow] = find(obj.M ~= 0);
             
-            progress = waitbar(0, 'Impedance computations in progress...',...
+            progress = waitbar(0, 'Power computations in progress...',...
                 'CreateCancelBtn',...
                 'setappdata(gcbf,''canceling'',1)');
             setappdata(progress, 'canceling', 0);
@@ -1787,7 +1804,7 @@ classdef AntArray
                 turnover = (size(obj.M,1)+1)/2;
             end;
             
-            k0 = 2*pi/obj.c0*obj.freq;
+            k0 = 2*pi/obj.c0*obj.norm_freq;
             ss = obj.spacing;
             Zc = obj.Z0;
             ellen = obj.el_len;
@@ -1818,7 +1835,6 @@ classdef AntArray
 
                     if dist < 1e-8
                         input_pwr(row,col,j) = Zc*k0^2*ellen^2/6/pi;
-%                         input_pwr(row, col, j) = 72.03;
                         input_pwr(row,col,j) = input_pwr(row,col,j)*I1*conj(M_tmp(j));
                     else
                         if z_el2 < z_el1
@@ -1839,18 +1855,6 @@ classdef AntArray
                             (2*(sin(psi)-psi*cos(psi))/psi^3 * (cos(ang))^2 + ...
                             ((psi^2-1)*sin(psi)+psi*cos(psi))/psi^3 * (sin(ang))^2);
                         input_pwr(row,col,j) = input_pwr(row,col,j)*I1*conj(M_tmp(j));
-%                         ang = atan(z_dist/y_dist);
-%                         r = dist;
-%                         if z_el2 < z_el1
-%                             input_pwr(row, col, j) = ...
-%                                 2*(cos(ang))^2*(-1/r^2*cos(r)-1/r^3*sin(r)) ...
-%                                 +(sin(ang))^2*(-1/r*sin(r)-1/r^2*cos(r)+1/r^3*sin(r));
-%                         else
-%                             input_pwr(row, col, j) = ...
-%                                 2*(cos(ang))^2*(-1/r^2*cos(r)+1/r^3*sin(r)) ...
-%                                 -(sin(ang))^2*(-1/r*sin(r)-1/r^2*cos(r)+1/r^3*sin(r));
-%                         end;
-%                         input_pwr(row,col,j) = input_pwr(row,col,j)*obj.M(i)*conj(obj.M(j));
                     end;                        
                 end;
                 waitbar(i/numel(obj.M));
@@ -1865,7 +1869,7 @@ classdef AntArray
             delete(progress);
         end
         
-        %% Function to normalize the currents to match input power
+        %% Function to normalize the currents to match desired input power
         function obj = normalize(obj)
             input_pwr = inpower(obj)/2; % Divide by 2 as only radiated in half-space
             
@@ -1873,6 +1877,7 @@ classdef AntArray
             obj.M = obj.M(:,:)./fact;
             obj.normalized = 1;
         end
+        
     end
     methods (Static, Access = 'private')
         %% Function to compute the electric field component of a dipole
@@ -1933,6 +1938,9 @@ classdef AntArray
                 dirpath = cell(1,3);
                 for i=1:3
                     dirpath{i} = mat2str(date_v(i));
+                    if numel(dirpath{i}) < 2
+                        dirpath{i} = ['0' dirpath{i}];
+                    end;
                 end;
                 dirpath = sprintf('%s', dirpath{:});
                 dirpath = [dirpath '/dat'];
@@ -1941,7 +1949,7 @@ classdef AntArray
             end;
             
             if attempts == 0
-                warning(['File ' savname ' not found, skipped\n']);
+                warning(['File ' savname ' not found, skipped']);
                 filename = 0;
             end; 
         end

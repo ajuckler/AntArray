@@ -65,9 +65,9 @@ if infile == "":
 	print 'No input file specified'
 	sys.exit(2)
 
-if bunch and theta == 0 and 'theta' in infile:
-	print 'Bunch parameter specified, but no theta value given'
-	sys.exit(2)
+# if bunch and theta == 0 and 'theta' in infile:
+# 	print 'Bunch parameter specified, but no theta value given'
+# 	sys.exit(2)
 
 # Run
 if not os.path.exists("img"):  # Check if dir exists and create it
