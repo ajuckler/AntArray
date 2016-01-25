@@ -80,7 +80,7 @@ classdef AntArray
             obj.max_E_strength = 0;
             obj.min_E_strength = 0;
             obj.normalized = 0;
-            obj.pwr = 10e-3;
+            obj.pwr = 10*10^-3;
             obj.weight_ang = pi/18; % 10°
             
             obj.dir = zeros(length(M));
@@ -174,11 +174,11 @@ classdef AntArray
         end
         
         %% Function to set the frequency used for normalization
-        function obj = setNormFreq(obj, freq)
+        function obj = setNormFreq(obj, n_freq)
             % INPUT
             %   obj:        AntArray object
             %   freq:       Frequency used at normalization [MHz]
-            obj.norm_freq = freq;
+            obj.norm_freq = n_freq*10^6;
             obj.normalized = 0;
         end;
         

@@ -6,14 +6,13 @@ else
     poolobj = parpool;
 end;
 
-weightArr = zeros(9,2);
 
 % Uniform
 % Init
 sizes = 60;
-space = 0;
-for freq=60:0.5:70
-    arr = AntArray(zeros(sizes), freq*10e3, [], space);
+space = 0.84;
+for freq=60.6:0.2:61.6
+    arr = AntArray(zeros(sizes), freq*1e3, [], space);
     arr = arr.setName(['fullx' mat2str(sizes) '_f' mat2str(freq*10)]);
     arr = arr.setNormFreq(60500);
     arr = arr.setMax('XY', 30);
@@ -33,20 +32,18 @@ for freq=60:0.5:70
     arr.plotAntArray();
     arr = arr.genPattern(11000, 3000, 'XY', 30);
     arr = arr.genPattern([], [], 'XY-BW');
-    weightArr(iter, 1) = arr.weight('XY');
-    arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
-    arr = arr.genPattern([], [], 'theta-BW', [], 0);
-    weightArr(iter, 2) = arr.weight('theta', 0);
+%     arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
+%     arr = arr.genPattern([], [], 'theta-BW', [], 0);
     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
 end;
 
 % Element spacing influence
 for freq=59.4:0.2:61.6
-    space = 0;
+    space = 0.84;
     rem_els = 9;
     % Init
-    arr = AntArray(zeros(60), freq*10e3, [], space);
+    arr = AntArray(zeros(60), freq*1e3, [], space);
     arr = arr.setName(['tr' mat2str(rem_els) '_f' mat2str(freq*10)]);
     arr = arr.setNormFreq(60500);
     arr = arr.setMax('XY', 30);
@@ -83,20 +80,14 @@ for freq=59.4:0.2:61.6
         '$\\lambda$\nFrequency: ' mat2str(freq) 'GHz']));
 
     % Plots
-    iter = round((space - 0.84)/0.02 + 1);
-    
     arr.plotAntArray();
     arr = arr.genPattern(11000, 3000, 'XY', 30);
     arr = arr.genPattern([], [], 'XY-BW');
-    weightArr(iter, 1) = arr.weight('XY');
     arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
     arr = arr.genPattern([], [], 'theta-BW', [], 0);
-    weightArr(iter, 2) = arr.weight('theta', 0);
     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
 end;
-
-export_dat(wArr, 'weights8');
 
 if verLessThan('matlab','8.2')
     matlabpool close
