@@ -5,7 +5,7 @@
 # Antoine Juckler
 #
 # pdf2img.py
-# Last modified: 2016/01/18
+# Last modified: 2016/01/27
 # ***************************
 
 import getopt
@@ -17,7 +17,7 @@ import math
 from subprocess import Popen
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta=', 'repeat', 'start='])
+	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta=', 'repeat', 'start=', 'max='])
 except getopt.GetoptError as err:
 	print(err)
 	sys.exit(2)
@@ -33,6 +33,7 @@ ang = False
 repeat = False
 fixed_dist = ''
 start = 0
+maxval = 20
 
 for o, a in opts:
 	if o in ('-i', '--input'):
@@ -57,6 +58,8 @@ for o, a in opts:
 		repeat = True
 	elif o in ('--start'):
 		start = eval(a)
+	elif o in ('--max'):
+		maxval = eval(a)
 	else:
 		print 'Unknown option: ' + format(o)
 		sys.exit(2)
@@ -73,9 +76,7 @@ if infile == "":
 if not os.path.exists("img"):  # Check if dir exists and create it
 	os.makedirs("img")
 
-if bunch:
-	maxval = 20
-else:
+if not bunch:
 	maxval = 1
 
 if infile.endswith('_BW'):  # Check if BW pattern

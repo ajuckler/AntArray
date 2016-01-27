@@ -396,7 +396,7 @@ classdef AntArray
             end;
             
             if obj.normalized == 0
-                fprintf('Computing array impedance...');
+                fprintf('Normalizing input power...');
                 obj = obj.normalize();
                 fprintf('\tdone\n');
             end;
@@ -476,7 +476,7 @@ classdef AntArray
             end;
             
             if obj.normalized == 0
-                fprintf('Computing array impedance...');
+                fprintf('Normalizing input power...');
                 obj = obj.normalize();
                 fprintf('\tdone\n');
             end;

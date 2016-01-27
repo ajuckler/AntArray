@@ -1,10 +1,10 @@
 clear
 
-if verLessThan('matlab','8.2')
-    matlabpool open
-else
-    poolobj = parpool;
-end;
+% if verLessThan('matlab','8.2')
+%     matlabpool open
+% else
+%     poolobj = parpool;
+% end;
 
 weightArr = zeros(9,2);
 
@@ -132,10 +132,10 @@ weightArr = zeros(9,2);
 % %     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
 % end;
 
-for space=1.2:0.1:1.4
+for space=0.84:0.02:1
     % Init
     arr = AntArray(zeros(60), 60500, [], space);
-    arr = arr.setName(['tr9_' mat2str(space*100)]);
+    arr = arr.setName(['tr10_' mat2str(space*100)]);
     arr = arr.setMax('XY', 30);
     arr = arr.setMax('YZ', 30);
     arr = arr.setMax('E', 25);
@@ -147,7 +147,7 @@ for space=1.2:0.1:1.4
     tmp = zeros(60);
     len = size(arr.M,1)/4;
     d_ratio = abs(1-tan(pi/3))/sqrt((tan(pi/3))^2-1);
-    k_max = 30 - round(9/d_ratio);
+    k_max = 30 - round(10/d_ratio);
     k_lim = round(k_max*d_ratio);
     for k=1:k_max
         i_max = size(arr.M,1)-len+2-k;
@@ -173,22 +173,22 @@ for space=1.2:0.1:1.4
     iter = round((space - 0.84)/0.02 + 1);
     
     arr.plotAntArray();
-    arr = arr.genPattern(11000, 3000, 'XY', 30);
-    arr = arr.genPattern([], [], 'XY-BW');
+%     arr = arr.genPattern(11000, 3000, 'XY', 30);
+%     arr = arr.genPattern([], [], 'XY-BW');
     disp(['weight: ' mat2str(arr.weight('XY'))]);
-%     weightArr(iter, 3) = arr.weight('XY');
-% %     arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
-% %     arr = arr.genPattern([], [], 'theta-BW', [], 0);
-%     weightArr(iter, 4) = arr.weight('theta', 0);
-% %     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
-% %     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
+    weightArr(iter, 1) = arr.weight('XY');
+%     arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
+%     arr = arr.genPattern([], [], 'theta-BW', [], 0);
+    weightArr(iter, 2) = arr.weight('theta', 0);
+%     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
+%     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
 end;
-% 
-% 
-% export_dat(weightArr, 'weights');
 
-if verLessThan('matlab','8.2')
-    matlabpool close
-else
-   delete(poolobj);
-end;
+
+export_dat(weightArr, 'weights');
+
+% if verLessThan('matlab','8.2')
+%     matlabpool close
+% else
+%    delete(poolobj);
+% end;
