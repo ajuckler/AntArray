@@ -5,5 +5,12 @@ run2.m
 *_back.m
 *_old.m
 *.asv
+E_XY.m
+E_YZ.m
+E_array.m
+adapt_matrix.m
+adapt_scale.m
+genArrayStruct.m
+genFieldPattern.m
 201*
 Simulations
