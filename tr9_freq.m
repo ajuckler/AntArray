@@ -39,7 +39,7 @@ end;
 % end;
 
 % Element spacing influence
-for freq=59.4:0.2:61.6
+for freq=61.6:0.2:61.6
     space = 0.84;
     rem_els = 9;
     % Init
