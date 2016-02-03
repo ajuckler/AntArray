@@ -177,8 +177,17 @@ classdef AntArray
         function obj = setNormFreq(obj, n_freq)
             % INPUT
             %   obj:        AntArray object
-            %   freq:       Frequency used at normalization [MHz]
+            %   n_freq:       Frequency used at normalization [MHz]
             obj.norm_freq = n_freq*10^6;
+            obj.normalized = 0;
+        end;
+        
+        %% Function to set the power used for normalization
+        function obj = setNormPwr(obj, n_pwr)
+            % INPUT
+            %   obj:        AntArray object
+            %   n_pwr:      Power used for normalization [W]
+            obj.pwr = n_pwr;
             obj.normalized = 0;
         end;
         
@@ -486,26 +495,100 @@ classdef AntArray
             y = y/1000;
             z = z/1000;
             
+            % Create waitbar
             progress = waitbar(0, 'Computations in progress...', ...
-                'CreateCancelBtn', ...
-                'setappdata(gcbf,''canceling'',1)');
+                'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
             setappdata(progress, 'canceling', 0);
+            posProg = get(progress, 'Position');
+            uicontrol('Parent', progress, 'Style', 'pushbutton', ...
+                'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
+                'String', 'Terminate', ...
+                'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
+                'Visible', 'on');
+            setappdata(progress, 'terminating', 0);
+            
+            waitbar(0);
             
             absc = logspace(2, ceil(log10(L)), samples);
             oord = zeros(1, length(absc));
-
-            for i=1:samples
-                E = zeros(1,3);
-                [E(1), E(2), E(3)] = E_array(obj, absc(i)/1000, y, z);
-                oord(i) = 20*log10(sqrt(sum(abs(E(:)).^2)));
-                if getappdata(progress, 'canceling')
-                    close all;
-                    delete(progress);
-                    return;
+            
+            % Partitions for parallel computing
+            iterations = 1;
+            s_samples = samples;
+            adapted_samples = 0;
+            if samples > 50
+                divs = factor2(round(samples));
+                if length(divs) <= 2
+                    divs = factor2(round(samples+1));
+                    adapted_samples = 1;
                 end;
-                waitbar(i/samples);
+                for i=1:round(length(divs)/2)
+                    if divs(end-i+1) > iterations && divs(i) < 25
+                        iterations = divs(i);
+                    end;
+                end;
+                if adapted_samples
+                    s_samples = (samples+1)/iterations;
+                else
+                    s_samples = samples/iterations;
+                end;
             end;
+            
+            % Computations
+            for k=1:iterations
+                if adapted_samples && k == iterations
+                    cut_oord = zeros(1, s_samples-1);
+                    cut_absc = absc(1, end-length(cut_oord):end);
+                else
+                    cut_oord = zeros(1, s_samples);
+                    cut_absc = absc(1, (k-1)*s_samples+1:k*s_samples);
+                end;
+                if iterations == 1
+                    for i=1:length(cut_oord)
+                        E = zeros(1,3);
+                        [E(1), E(2), E(3)] = E_array(obj, cut_absc(i)/1000, y, z);
+                        cut_oord(i) = 20*log10(sqrt(sum(abs(E(:)).^2)));
 
+                        waitbar(i/samples);
+                        
+                        if getappdata(progress, 'canceling')
+                            close all;
+                            delete(progress);
+                            return;
+                        elseif getappdata(progress, 'terminating')
+                            close all;
+                            delete(progress);
+                            error('Program terminated by user');
+                        end;
+                    end;
+                else
+                    parfor i=1:length(cut_oord)
+                        E = zeros(1,3);
+                        [E(1), E(2), E(3)] = E_array(obj, cut_absc(i)/1000, y, z);
+                        cut_oord(i) = 20*log10(sqrt(sum(abs(E(:)).^2)));
+                    end;
+                    
+                    if getappdata(progress, 'canceling')
+                        close all;
+                        delete(progress);
+                        return;
+                    elseif getappdata(progress, 'terminating')
+                        close all;
+                        delete(progress);
+                        error('Program terminated by user');
+                    end;
+                    
+                    waitbar(k/iterations);
+                end;
+                
+                if adapted_samples && k == iterations
+                    oord(1, end-length(cut_oord):end) = cut_oord(:);
+                else
+                    oord(1, (k-1)*s_samples+1:k*s_samples) = cut_oord(:);
+                end;
+            end;
+        
+            % Plot
             waitbar(1, progress, 'Generating plots...');
             semilogx(absc, oord, 'LineWidth', 2);
             xlim([absc(1) absc(end)]);
@@ -912,7 +995,13 @@ classdef AntArray
         end
         
         %% Function to show the antenna repartition
-        function plotAntArray(obj)
+        function plotAntArray(obj, contour)
+            if nargin < 2 || contour < 1
+                contour = 0;
+            else
+                contour = 1;
+            end;
+            
             colors = {'m', 'c', 'r', 'g', 'b', 'k'};
             markers = {'o', '+', 'x', 's', 'd'};
             
@@ -939,12 +1028,21 @@ classdef AntArray
             xlim([-1 length(obj.M)+1]);
             ylim([-1 length(obj.M)+1]);
             
-            text(0, -length(obj.M)*0.02, ...
+            text(0, -length(obj.M)*0.03, ...
                 [mat2str(length(obj.M)) 'x' mat2str(length(obj.M))], ...
                 'Interpreter', 'latex', 'FontSize', 20);
             
             L = legend('Location', 'eastoutside');
             set(L, 'Interpreter', 'latex', 'FontSize', 20);
+            
+            if contour == 1
+                cc = length(obj.M)+1;
+                plot([0 cc], [0 0], '--k', 'Linewidth', 1);
+                plot([0 cc], [cc cc], '--k', 'Linewidth', 1);
+                plot([0 0], [0 cc], '--k', 'Linewidth', 1);
+                plot([cc cc], [0 cc], '--k', 'Linewidth', 1);
+            end;
+            
             title('\textbf{Array arrangement}', ...
                 'Interpreter', 'latex', 'FontSize', 24);
             axis off;
@@ -1267,7 +1365,7 @@ classdef AntArray
             
             dim1 = round(L/ss)+1;
             dim2 = round(d/ss)+1;
-            plotdata = zeros(dim2+1, dim1+1);    % Larger to be able to plot evth
+            plotdata = zeros(dim2+1, dim1+1); % Larger to be able to plot evth
 
             progress = waitbar(0, 'Computations in progress...',...
                 'CreateCancelBtn',...
@@ -1294,7 +1392,7 @@ classdef AntArray
 
             waitbar(1, progress, 'Generating plots...');
 
-            % ========================================================================
+            % ==============================================================
             % Generates axes
             if L/2 < 1/100
                 fact_L = 1000;
@@ -1861,6 +1959,7 @@ classdef AntArray
                 if getappdata(progress, 'canceling')
                     close all;
                     delete(progress);
+                    input_pwr = -1;
                     return;
                 end;
             end;
@@ -1873,9 +1972,13 @@ classdef AntArray
         function obj = normalize(obj)
             input_pwr = inpower(obj)/2; % Divide by 2 as only radiated in half-space
             
-            fact = sqrt(input_pwr/obj.pwr);
-            obj.M = obj.M(:,:)./fact;
-            obj.normalized = 1;
+            if input_pwr < 0
+                warning('MyWARN:norm_power', 'Power was not normalized');
+            else
+                fact = sqrt(input_pwr/obj.pwr);
+                obj.M = obj.M(:,:)./fact;
+                obj.normalized = 1;
+            end;
         end
         
     end
@@ -1949,7 +2052,8 @@ classdef AntArray
             end;
             
             if attempts == 0
-                warning(['File ' savname ' not found, skipped']);
+                warning('MyWARN:file_not_found', ...
+                    ['File ' savname ' not found, skipped']);
                 filename = 0;
             end; 
         end
@@ -1996,7 +2100,8 @@ classdef AntArray
             val = A(x_ind+1, y_ind+1);
             
             if x_dev > abs(A(1,3)-A(1,2)) || y_dev > abs(A(3,1)-A(2,1))
-                warning('Specified point might be out of plotted area');
+                warning('MyWARN:out_of_plot_area', ...
+                    'The specified point might be out of plotted area');
             end;
             
         end

@@ -258,7 +258,7 @@ end;
 % export_dat(wArr, 'weights');
 
 % Circles
-for rem_els=0:15
+for rem_els=9:15
     disp(['Circles, iteration ' num2str(rem_els) ' of 15']);
     % Init
     arr = AntArray(zeros(64), 60500, [], 0.84);
@@ -286,8 +286,11 @@ for rem_els=0:15
     arr = arr.genPattern([], [], 'XY-BW');
 %     wArr(rem_els+1,7) = arr.weight('XY');
     arr = arr.E_strength(15000, 0, 0, 500);
-    arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
-    arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
+%     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
+%     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
+    arr = arr.genPattern(10*1000, 3000, 'YZ', 30);
+    arr = arr.genPattern(10*1000, [], 'YZ-BW');
+
 end;
 
 if verLessThan('matlab','8.2')

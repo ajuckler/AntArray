@@ -1,3 +1,7 @@
+%
+% Copyright 2016, Antoine JUCKLER
+%
+
 function arr = drawCircle(dims, r, t)
 % Generate array of which elements are forming a disk
 %
