@@ -41,7 +41,9 @@ classdef AntArray
             %   l:      length of dipole element [mm]
             %   s:      inter-element spacing [fraction of wavelength]
             
-            if size(M,1) ~= size(M,2)
+            if nargin == 0
+                M = zeros(64);
+            elseif size(M,1) ~= size(M,2)
                 error('The matrix containing the excitations must be square');
             end;
             
@@ -203,6 +205,12 @@ classdef AntArray
             %   obj:    AntArray object
             %   M:      matrix of elements that need to be steered
             %   x,y,z:  desired focus point [mm]
+            
+            if nargin < 3
+                x = 100000;
+                y = 0;
+                z = 0;
+            end;
             
             if size(M,1) < size(obj.M,1) || size(M,2) < size(obj.M, 2)
                 error('Matrix sizes do not match');
@@ -558,7 +566,8 @@ classdef AntArray
                         elseif getappdata(progress, 'terminating')
                             close all;
                             delete(progress);
-                            error('Program terminated by user');
+                            throw(MException('MyERR:Terminated', ...
+                            'Program terminated by user'));
                         end;
                     end;
                 else
@@ -575,7 +584,8 @@ classdef AntArray
                     elseif getappdata(progress, 'terminating')
                         close all;
                         delete(progress);
-                        error('Program terminated by user');
+                        throw(MException('MyERR:Terminated', ...
+                            'Program terminated by user'));
                     end;
                     
                     waitbar(k/iterations);
@@ -1071,13 +1081,23 @@ classdef AntArray
             
             dim = round(L/ss)+1;
             ext_dim = dim+1;
-            plotdata = zeros(ext_dim);    % Larger to be able to plot evth
+            plotdata = zeros(ext_dim); % Larger to be able to plot evth
 
-            progress = waitbar(0, 'Computations in progress...',...
-                'CreateCancelBtn',...
-                'setappdata(gcbf,''canceling'',1)');
+            % Create waitbar
+            progress = waitbar(0, 'Computations in progress...', ...
+                'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
             setappdata(progress, 'canceling', 0);
-
+            posProg = get(progress, 'Position');
+            uicontrol('Parent', progress, 'Style', 'pushbutton', ...
+                'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
+                'String', 'Terminate', ...
+                'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
+                'Visible', 'on');
+            setappdata(progress, 'terminating', 0);
+            
+            waitbar(0);
+            
+            % Compute
             for i=1:dim
                 z = L/2 - (i-1)*ss;
                 slice = plotdata(ext_dim-i,:);
@@ -1088,11 +1108,17 @@ classdef AntArray
                     slice(j) = 20*log10(sqrt(sum(abs(E(:)).^2)));
                 end;
                 plotdata(ext_dim-i,:) = slice;
+                
                 waitbar(i/dim);
                 if getappdata(progress, 'canceling')
                     close all;
                     delete(progress);
                     return;
+                elseif getappdata(progress, 'terminating')
+                    close all;
+                    delete(progress);
+                    throw(MException('MyERR:Terminated', ...
+                    'Program terminated by user'));
                 end;
             end;
 
@@ -1367,11 +1393,21 @@ classdef AntArray
             dim2 = round(d/ss)+1;
             plotdata = zeros(dim2+1, dim1+1); % Larger to be able to plot evth
 
-            progress = waitbar(0, 'Computations in progress...',...
-                'CreateCancelBtn',...
-                'setappdata(gcbf,''canceling'',1)');
+            % Create waitbar
+            progress = waitbar(0, 'Computations in progress...', ...
+                'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
             setappdata(progress, 'canceling', 0);
-
+            posProg = get(progress, 'Position');
+            uicontrol('Parent', progress, 'Style', 'pushbutton', ...
+                'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
+                'String', 'Terminate', ...
+                'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
+                'Visible', 'on');
+            setappdata(progress, 'terminating', 0);
+            
+            waitbar(0);
+            
+            % Compute
             for i=1:dim2
                 x = (i-1)*ss;
                 slice = plotdata(i,:);
@@ -1382,11 +1418,17 @@ classdef AntArray
                     slice(j) = 20*log10(sqrt(sum(abs(E(:)).^2)));
                 end;
                 plotdata(i,:) = slice;
+                
                 waitbar(i/dim2);
                 if getappdata(progress, 'canceling')
                     close all;
                     delete(progress);
                     return;
+                elseif getappdata(progress, 'terminating')
+                    close all;
+                    delete(progress);
+                    throw(MException('MyERR:Terminated', ...
+                    'Program terminated by user'));
                 end;
             end;
 
@@ -1529,11 +1571,21 @@ classdef AntArray
             dim2 = round(d/ss)+1;
             plotdata = zeros(dim2+1, dim1+1);    % Larger to be able to plot evth
 
-            progress = waitbar(0, 'Computations in progress...',...
-                'CreateCancelBtn',...
-                'setappdata(gcbf,''canceling'',1)');
+            % Create waitbar
+            progress = waitbar(0, 'Computations in progress...', ...
+                'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
             setappdata(progress, 'canceling', 0);
+            posProg = get(progress, 'Position');
+            uicontrol('Parent', progress, 'Style', 'pushbutton', ...
+                'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
+                'String', 'Terminate', ...
+                'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
+                'Visible', 'on');
+            setappdata(progress, 'terminating', 0);
+            
+            waitbar(0);
 
+            % Compute
             for i=1:dim2
                 x = (i-1)*ss;
                 slice = plotdata(i,:);
@@ -1546,11 +1598,17 @@ classdef AntArray
                     slice(j) = 20*log10(sqrt(sum(abs(E(:)).^2)));
                 end;
                 plotdata(i,:) = slice;
+                
                 waitbar(i/dim2);
                 if getappdata(progress, 'canceling')
                     close all;
                     delete(progress);
                     return;
+                elseif getappdata(progress, 'terminating')
+                    close all;
+                    delete(progress);
+                    throw(MException('MyERR:Terminated', ...
+                    'Program terminated by user'));
                 end;
             end;
 

@@ -9,6 +9,8 @@ else
     poolobj = parpool;
 end;
 
+weightArr = zeros(4,2);
+
 for quant_lvl=4:-1:1
     % Init
     arr = AntArray(zeros(60), 60500, [], 0.84);
@@ -67,19 +69,25 @@ for quant_lvl=4:-1:1
     el_ratio = num2str(length(find(tmp~=0))/numel(tmp)*100,3);
     
     arr = arr.setComments(sprintf(['Elements spacing: 0.84$\\lambda$\n' ...
-        'Quantization level:' num2str(quant_lvl) '\n' ...
+        'Quantization level: ' num2str(quant_lvl) '\n' ...
         '\\# of elements: ' el_ratio '\\%%']));
 
     % Plots
     arr.plotAntArray(1);
-    arr = arr.genPattern(11000, 3000, 'XY', 30);
-    arr = arr.genPattern([], [], 'XY-BW');
-    arr = arr.E_strength(15000, 0, 0, 500);
-%     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
-%     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
-    arr = arr.genPattern(10*1000, 3000, 'YZ', 30);
-    arr = arr.genPattern(10*1000, [], 'YZ-BW');
+%     arr = arr.genPattern(11000, 3000, 'XY', 30);
+%     arr = arr.genPattern([], [], 'XY-BW');
+%     arr = arr.genPattern(11000, 3000, 'theta', 30, 0);
+%     arr = arr.genPattern([], [], 'theta-BW', [], 0);
+%     arr = arr.E_strength(15000, 0, 0, 500);
+% %     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
+% %     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
+%     arr = arr.genPattern(10*1000, 3000, 'YZ', 30);
+%     arr = arr.genPattern(10*1000, [], 'YZ-BW');
+    weightArr(5-quant_lvl, 1) = arr.weight('XY');
+    weightArr(5-quant_lvl, 2) = arr.weight('theta', 0);
 end;
+
+export_dat(weightArr, 'weights_quant');
 
 if verLessThan('matlab','8.2')
     matlabpool close
