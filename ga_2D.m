@@ -72,9 +72,6 @@ parfor i=1:v_dim
     eva(i,:) = eva_ln;
 end;
 
-% PRINT AND SAVE CURRENT STATE
-% gen folder per iteration with random_name
-% save arr with number-val pair, and array arrangements
 iter = 1;
 save_state(pop, eva, iter);
 
