@@ -2,7 +2,7 @@ function chrom = mat2chrom(mat)
 % Transforms a matrix into a chromosome
 %
 % INPUT:
-%   mat:    matrix to be coded
+%   mat:    matrix to be encoded
 %
 
 % Check that matrix is square
