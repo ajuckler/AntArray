@@ -11,7 +11,9 @@ classdef WaitDialog < handle
             screensize = get(0, 'ScreenSize');
             xpos = ceil((screensize(3)-sizeW(1))/2);
             ypos = ceil((screensize(4)-sizeW(2))/2);
-            obj.handler = dialog('Name', '', 'Position', [xpos ypos sizeW]);
+            obj.handler = dialog('Name', '', ...
+                'Position', [xpos ypos sizeW], ...
+                'Visible', 'off');
 
             txt_width = sizeW(1) - 40;
             uicontrol('Parent', obj.handler, ...
@@ -56,6 +58,9 @@ classdef WaitDialog < handle
                 'HorizontalAlignment', 'left', ...
                 'FontSize', 9, ...
                 'String', '');
+            
+            set(obj.handler, 'Visible', 'on');
+            pause(0.5);
         end;
         function delete(obj)
             delete(obj.handler);
@@ -70,9 +75,11 @@ classdef WaitDialog < handle
         function setMainString(obj, str)
             set(obj.main_string, 'String', str);
             set(obj.sub_string, 'String', '');
+            set(obj.handler, 'Visible', 'on');
         end;
         function setSubString(obj, str)
             set(obj.sub_string, 'String', str);
+            set(obj.handler, 'Visible', 'on');
         end;
     end;
     methods (Static, Access='public')

@@ -9,10 +9,12 @@ function save_state(pop, eva, iter)
 
 if numel(pop) ~= numel(eva)
     error 'pop and eva have different size';
-elseif numel(pop) ~= length(pop)
-    error 'pop is not of type vector';
-elseif numel(eva) ~= length(eva)
-    error 'eva is not of type vector';
+end;
+if numel(pop) ~= length(pop)
+    pop = reshape(pop, 1, numel(pop));
+end;
+if numel(eva) ~= length(eva)
+    eva = reshape(eva, 1, numel(eva));
 end;
 
 if size(eva, 1) ~= 1
@@ -28,17 +30,20 @@ elseif iter == 1
     prefix_folder_name = datestr(now, 'yyyymmdd/HHMMSS/');
 end;
 
-dir = [prefix_folder_name iter '/'];
+dir = [prefix_folder_name num2str(iter) '/'];
+if ~exist(dir, 'dir')
+    mkdir(dir);
+end;
 
 % Generate individual-fitness array
-pairs = [1:length(pop); eva(:)]';
+pairs = [1:length(pop); eva]';
 save([dir 'fitness.dat'], 'pairs', '-ASCII');
 clearvars pairs
 
 % Save all array arrangements
 for i=1:length(pop)
     arrangmt = AntArray.quantize(pop{i}.M, 1);
-    save([dir 'arrangement_' i '.dat'], 'arrangmt', '-ASCII');
+    save([dir 'arrangement_' num2str(i) '.dat'], 'arrangmt', '-ASCII');
 end;
 
 end
