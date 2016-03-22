@@ -2172,6 +2172,13 @@ classdef AntArray
             %   lvl:    quantization level
             %
             
+            quant = abs(round(quant));
+            if nargin < 3
+                lvl = 0;
+            else
+                lvl = abs(round(lvl));
+            end;
+            
             if size(M, 1) ~= size(M, 2)
                 error 'M should be a square matrix';
             elseif mod(length(M), 2) ~= 0
@@ -2181,22 +2188,23 @@ classdef AntArray
             M(M < 10^-6) = 0;
             M(M > 10^-6) = 1;
             
-            half_dim = round(size(M,1)/quant);
-    
-            for i=1:half_dim
-                y = (i-1)*quant + 1;
-                for j=1:half_dim
-                    x = (j-1)*quant + 1;
-                    sq = tmp(y:y+quant-1, x:x+quant-1);
-                    if sum(sum(sq)) < lvl
-                        sq = zeros(quant);
-                    else
-                        sq = ones(quant);
+            if quant > 1
+                half_dim = round(size(M,1)/quant);
+
+                for i=1:half_dim
+                    y = (i-1)*quant + 1;
+                    for j=1:half_dim
+                        x = (j-1)*quant + 1;
+                        sq = M(y:y+quant-1, x:x+quant-1);
+                        if sum(sum(sq)) < lvl
+                            sq = zeros(quant);
+                        else
+                            sq = ones(quant);
+                        end;
+                        M(y:y+sq_dim-1, x:x+sq_dim-1) = sq(:,:);
                     end;
-                    tmp(y:y+sq_dim-1, x:x+sq_dim-1) = sq(:,:);
                 end;
             end;
-            
         end;
     end
 end

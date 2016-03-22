@@ -37,7 +37,7 @@ clearvars pairs
 
 % Save all array arrangements
 for i=1:length(pop)
-    arrangmt = pop{i}.M;
+    arrangmt = AntArray.quantize(pop{i}.M, 1);
     save([dir 'arrangement_' i '.dat'], 'arrangmt', '-ASCII');
 end;
 
