@@ -2163,5 +2163,40 @@ classdef AntArray
             end;
             
         end
+        
+        %% Quantize a matrix
+        function M = quantize(M, quant, lvl)
+            % INPUT:
+            %   M:      matrix to be quantized
+            %   quant:  dimension of quantization
+            %   lvl:    quantization level
+            %
+            
+            if size(M, 1) ~= size(M, 2)
+                error 'M should be a square matrix';
+            elseif mod(length(M), 2) ~= 0
+                error 'M should be a multiple of quant';
+            end;
+            
+            M(M < 10^-6) = 0;
+            M(M > 10^-6) = 1;
+            
+            half_dim = round(size(M,1)/quant);
+    
+            for i=1:half_dim
+                y = (i-1)*quant + 1;
+                for j=1:half_dim
+                    x = (j-1)*quant + 1;
+                    sq = tmp(y:y+quant-1, x:x+quant-1);
+                    if sum(sum(sq)) < lvl
+                        sq = zeros(quant);
+                    else
+                        sq = ones(quant);
+                    end;
+                    tmp(y:y+sq_dim-1, x:x+sq_dim-1) = sq(:,:);
+                end;
+            end;
+            
+        end;
     end
 end

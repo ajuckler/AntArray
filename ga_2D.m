@@ -42,7 +42,8 @@ try
             if ~isa(start_pop{i}, 'AntArray')
                 error('START_POP is not of type AntArray');
             elseif quant
-                start_pop{i} = start_pop{i}.quantize(1);
+                start_pop{i} = AntArray(...
+                               AntArray.quantize(start_pop{i}.M, 2, 1));
             end;
         end;
         chrom_sz = size(start_pop{1}.M, 1);
