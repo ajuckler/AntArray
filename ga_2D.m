@@ -1,4 +1,4 @@
-function [optim_sol, optim_val] = ga_2D(start_pop)
+function [optim_sol, optim_val] = ga_2D(start_pop, quant)
 % Performs optimization of antenna array arrangement using a genetic
 % algorithm
 %
@@ -6,6 +6,11 @@ function [optim_sol, optim_val] = ga_2D(start_pop)
 %   start_pop:  (optional) individuals to be included in the population
 %
 
+if nargin < 2
+    quant = 0;
+else
+    quant = (quant > 0);
+end;
 if nargin < 1
     start_pop = [];
 end;
@@ -36,9 +41,8 @@ try
         for i=1:length(start_pop)
             if ~isa(start_pop{i}, 'AntArray')
                 error('START_POP is not of type AntArray');
-            else
-                % QUANTIZE START_POP !!
-                % !!!!!!!!!!!!!!!!!!!!!
+            elseif quant
+                start_pop{i} = start_pop{i}.quantize(1);
             end;
         end;
         chrom_sz = size(start_pop{1}.M, 1);
@@ -55,15 +59,17 @@ try
         clearvars temp;
     end;
 
-    if mod(chrom_sz, 4) == 0
+    if mod(chrom_sz, 4) == 0 && ~quant
         chrom_sz = chrom_sz/4;
+    elseif mod(chrom_sz, 2) == 0 && quant
+        chrom_sz = chrom_sz/2;
     end;
 
     end_index = min(length(start_pop), pop_sz);
     pop(1:end_index) = start_pop(1:end_index);
     for i=end_index:pop_sz
         chrom = randi([0 1], 1, chrom_sz*chrom_sz);
-        pop{i} = AntArray(chrom2mat(chrom));
+        pop{i} = AntArray(chrom2mat(chrom, quant));
         dial.terminate();
     end;
 
@@ -134,7 +140,7 @@ try
                 end;
 
                 % Convert to chromosomes
-                inds{j} = mat2chrom(inds{j}.M);
+                inds{j} = mat2chrom(inds{j}.M, quant);
             end;
 
             % Crossover
@@ -188,7 +194,7 @@ try
             % Save new pop & evaluate
             % -----------------------
             for j=1:trn_sz
-                inds{j} = AntArray(chrom2mat(chroms{j}));
+                inds{j} = AntArray(chrom2mat(chroms{j}, quant));
                 vals(j) = fitness(inds{j});
                 dial.terminate();
             end;
