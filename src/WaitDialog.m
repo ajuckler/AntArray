@@ -60,7 +60,6 @@ classdef WaitDialog < handle
                 'String', '');
             
             set(obj.handler, 'Visible', 'on');
-            pause(0.5);
         end;
         function delete(obj)
             delete(obj.handler);

@@ -47,7 +47,7 @@ chrom_sz = [];      % chromosome size
 
 pop_sz = 50;        % population size
 trn_sz = 2;         % tournament selection size
-fit_sz = trn_sz;  % number of elements passed through
+fit_sz = trn_sz;    % number of elements passed through
                     %   must be a multiple of trn_sz
 
 mut_prob = 0.001;   % mutation probability
@@ -153,7 +153,7 @@ try
         pop_tmp = pop;  % Tmp variable needed for parfor-loop
         eva_tmp = eva;
 
-        for i=fit_sz/trn_sz+1:v_dim % TRANSFORM TO PARFOR
+        parfor i=fit_sz/trn_sz+1:v_dim
             % Selection
             % ---------
             inds = pop(:, i);

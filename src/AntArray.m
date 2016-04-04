@@ -1097,11 +1097,24 @@ classdef AntArray
             
             waitbar(0);
             
+            % Search for symmetry
+            dim_z = dim;
+            dim_y = dim;
+            
+            % use matrix as mask (~=), then sum
+            % !! for uneven dimensions
+            if isempty(obj.M(obj.M ~= obj.M(end:-1:1,:)))
+                dim_z = ceil(dim_z/2);
+            end;
+            if isempty(obj.M(obj.M ~= obj.M(:, end:-1:1)))
+                dim_y = ceil(dim_y/2);
+            end;
+            
             % Compute
-            for i=1:dim
+            for i=1:dim_z
                 z = L/2 - (i-1)*ss;
                 slice = plotdata(ext_dim-i,:);
-                parfor j=1:dim
+                parfor j=1:dim_y
                     y = (j-1)*ss - L/2;
                     E = zeros(1,3);
                     [E(1), E(2), E(3)] = E_array(obj, d, y, z);
@@ -1109,7 +1122,7 @@ classdef AntArray
                 end;
                 plotdata(ext_dim-i,:) = slice;
                 
-                waitbar(i/dim);
+                waitbar(i/dim_z);
                 if getappdata(progress, 'canceling')
                     close all;
                     delete(progress);
@@ -1120,6 +1133,13 @@ classdef AntArray
                     throw(MException('MyERR:Terminated', ...
                     'Program terminated by user'));
                 end;
+            end;
+            
+            if dim_y ~= dim
+                plotdata(:, end-1:-1:end/2) = plotdata(:, 1:end/2);
+            end;
+            if dim_z ~= dim
+                plotdata(end/2:-1:1, :) = plotdata(end/2:end-1, :);
             end;
 
             waitbar(1, progress, 'Generating plots...');
