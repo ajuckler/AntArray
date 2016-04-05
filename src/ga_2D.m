@@ -1,5 +1,5 @@
 %GA_2D Optimize the array arrangement using a genetic algorithm
-%   [OPTIM_SOL, OPTIM_VAL] = GA_2D(START_POP, QUANT)
+%   [OPTIM_SOL, OPTIM_VAL] = GA_2D(DIST, START_POP, QUANT)
 %
 %   The algorithm parameters are hard-coded as follow:
 %   chromosome size:    
@@ -16,6 +16,8 @@
 %   The fitness of the individuals is evaluated with the FITNESS function.
 %
 %   INPUT:
+%       DIST:       distance from the array where the fitness function will
+%                   be evaluated [mm]
 %       START_POP:  (optional) individuals to be included in the population
 %                   [cell array of AntArray elements]
 %       QUANT:      (optional) is the array arrangement quantized?
@@ -29,14 +31,14 @@
 
 %   Copyright 2016, Antoine Juckler. All rights reserved.
 
-function [optim_sol, optim_val] = ga_2D(start_pop, quant)
+function [optim_sol, optim_val] = ga_2D(dist, start_pop, quant)
 
-if nargin < 2
+if nargin < 3
     quant = 1;
 else
     quant = (quant > 0);
 end;
-if nargin < 1
+if nargin < 2
     start_pop = [];
 end;
 
@@ -63,12 +65,27 @@ try
     % -------------------
     pop = cell(1, pop_sz);
     if ~isempty(start_pop) % if some elements already given, check
-        for i=1:length(start_pop)
-            if ~isa(start_pop{i}, 'AntArray')
+        if iscell(start_pop)
+            for i=1:length(start_pop)
+                if ~isa(start_pop{i}, 'AntArray')
+                    error('START_POP is not of type AntArray');
+                elseif quant
+                    start_pop{i} = AntArray(...
+                                   AntArray.quantize(start_pop{i}.M, 2, 1));
+                end;
+            end;
+        else
+            if ~isa(start_pop, 'AntArray')
                 error('START_POP is not of type AntArray');
             elseif quant
-                start_pop{i} = AntArray(...
-                               AntArray.quantize(start_pop{i}.M, 2, 1));
+                tmp = AntArray(...
+                               AntArray.quantize(start_pop.M, 2, 1));
+                start_pop = cell(1,1);
+                start_pop{1} = tmp;
+            else
+                tmp = start_pop;
+                start_pop = cell(1,1);
+                start_pop{1} = tmp;
             end;
         end;
         chrom_sz = size(start_pop{1}.M, 1);
@@ -118,12 +135,12 @@ try
         pop_ln = pop(:, i);
         eva_ln = eva(:, i);
         for j=1:trn_sz
-            eva_ln(j) = fitness(pop_ln{j});
-            dial.terminate();
+            eva_ln(j) = fitness(pop_ln{j}, dist);
         end;
         eva(:, i) = eva_ln;
     end;
-
+    
+    dial.terminate();
     dial.setMainString('Initial population evaluated');
 
     iter = 1;
@@ -133,7 +150,7 @@ try
     dial.terminate();
 
     while iter <= max_iter
-        dial.setMainString(['Working on generation ' num2str(iter) '...'])
+        dial.setMainString(['Working on generation ' num2str(iter) '...']);
 
         % Pass best individuals through
         % -----------------------------
@@ -152,6 +169,8 @@ try
 
         pop_tmp = pop;  % Tmp variable needed for parfor-loop
         eva_tmp = eva;
+        
+        dial.terminate();
 
         parfor i=fit_sz/trn_sz+1:v_dim
             % Selection
@@ -159,7 +178,6 @@ try
             inds = pop(:, i);
             vals = eva(:, i);
             for j=1:trn_sz
-                dial.terminate();
                 rand_index = trn_sz+j;
                 while rand_index == (i-1)*trn_sz+j
                     rand_index = randi(pop_sz, 1);
@@ -204,10 +222,9 @@ try
                     par1(cross_patrn == 1);     % Child 2
                 chroms{2} = temp_chrom;
             end;
-            clearvars temp_chrom cross_patrn;
-
-            dial.setSubString('Children generated');
-            dial.terminate();
+            % clearvars temp_chrom cross_patrn;
+            temp_chrom = [];
+            cross_patrn = [];
 
             % Mutation
             % --------
@@ -217,18 +234,17 @@ try
                 mut_chrom = chroms{chrom_nb};
                 mut_chrom(pos) = ~mut_chrom(pos);
                 chroms{chrom_nb} = mut_chrom;
-                clearvars mut_chrom chrom_nb pos
-
-                dial.setSubString('Mutation occured');
-                dial.terminate();
+%                 clearvars mut_chrom chrom_nb pos
+                mut_chrom = [];
+                chrom_nb = [];
+                pos = [];
             end;
 
             % Save new pop & evaluate
             % -----------------------
             for j=1:trn_sz
                 inds{j} = AntArray(chrom2mat(chroms{j}, quant));
-                vals(j) = fitness(inds{j});
-                dial.terminate();
+                vals(j) = fitness(inds{j}, dist);
             end;
             eva_tmp(:, i) = vals;
             pop_tmp(:, i) = inds;
@@ -240,9 +256,8 @@ try
         iter = iter+1;
 
         save_state(pop, eva, iter);
-        dial.setSubString(['Generation ' num2str(iter-1) ' data saved']);
-        dial.terminate();
     end;
+    dial.terminate();
 
     [optim_val, pos] = max(eva(:));
     optim_sol = pop{pos};
