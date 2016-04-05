@@ -26,6 +26,8 @@ classdef AntArray
         dir;            % matrix of element's groups
         dir_str;        % cell array of element's groups
         comments;       % string to be printed on elements' plot
+        plotres = 1;
+        dispwait = 1;
         
         normalized;     % Has the array been normalized?
         pwr;            % Input power [W]
@@ -90,6 +92,11 @@ classdef AntArray
             obj.dir_str{1} = 'Unknown';
             obj.norm_freq = obj.freq;
         end
+        
+        %% Disable waitbars
+        function obj = disableWaitbars(obj)
+            obj.dispwait = 0;
+        end;
         
         %% Function to set the optimization window dimension
         function obj = setOptWin(obj, side, dist)
@@ -378,7 +385,7 @@ classdef AntArray
         end
         
         %% Function to compute and plot the field pattern
-        function obj = genPattern(obj, d, L, mode, ss, theta)
+        function [obj, ptrn] = genPattern(obj, d, L, mode, ss, theta)
             % Compute and plot the field pattern of the antenna array
             % Behaviour depends on the "mode" parameter:
             % If mode = 'YZ':
@@ -398,6 +405,11 @@ classdef AntArray
             %    ss:     Step size for the plot [mm]
             %    theta:  [if mode=theta] angle wrt Z-axis [radians]
            
+            if nargout == 2
+                plot_val = obj.plotres;
+                obj.plotres = 0;
+            end;
+            
             L = L/1000;
             d = d/1000;
 
@@ -423,28 +435,33 @@ classdef AntArray
             if strcmp(mode, 'YZ')
                 fprintf(['\tStep size: ' mat2str(ss*1000) 'mm\n']);
                 fprintf(['\tArray size: ' mat2str(length(obj.M)*obj.spacing*1000) 'mm\n']);
+                
+                if length(d) > 1
+                    warning('Only the pattern at the latest distance will be returned');
+                end;
 
                 for i=1:length(d)
                     fprintf(['\tGenerating pattern ' mat2str(i) ...
                         ' of ' mat2str(length(d)) '...']);
-                    E_YZ(obj, d(i), L, ss);
+                    
+                    ptrn = E_YZ(obj, d(i), L, ss);
                     fprintf('\tdone\n');
                 end;
             elseif strcmp(mode, 'XY')
                 fprintf(['\tStep size: ' mat2str(ss*1000) 'mm\n']);
                 fprintf(['\tArray size: ' mat2str(length(obj.M)*obj.spacing*1000) 'mm\n']);
 
-                E_XY(obj, d, L, ss);
+                ptrn = E_XY(obj, d, L, ss);
                 fprintf('\tdone\n');
             elseif strcmp(mode, 'YZ-BW')
                 for i=1:length(d)
                     fprintf(['\tGenerating BW pattern ' mat2str(i) ...
                         ' of ' mat2str(length(d)) '...']);
-                    E_BW(obj, d(i));
+                    ptrn = E_BW(obj, d(i));
                     fprintf('\tdone\n');
                 end;
             elseif strcmp(mode, 'XY-BW')
-                E_BW(obj);
+                ptrn = E_BW(obj);
                 fprintf('\tdone\n');
             elseif strcmp(mode, 'theta')
                 if isempty(theta)
@@ -453,18 +470,20 @@ classdef AntArray
                 fprintf(['\tStep size: ' mat2str(ss*1000) 'mm\n']);
                 fprintf(['\tArray size: ' mat2str(length(obj.M)*obj.spacing*1000) 'mm\n']);
 
-                E_theta(obj, d, L, ss, theta);
+                ptrn = E_theta(obj, d, L, ss, theta);
                 fprintf('\tdone\n');
             elseif strcmp(mode, 'theta-BW')
                 if isempty(theta)
                     theta = pi/4;
                 end;
                 
-                E_BW(obj, [], theta);
+                ptrn = E_BW(obj, [], theta);
                 fprintf('\tdone\n');
             else
                 error('Unhandled mode');
             end;
+            
+            obj.plotres = plot_val;
         end
         
         %% Function to compute the E-field strength along a line
@@ -504,19 +523,21 @@ classdef AntArray
             z = z/1000;
             
             % Create waitbar
-            progress = waitbar(0, 'Computations in progress...', ...
-                'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
-            setappdata(progress, 'canceling', 0);
-            posProg = get(progress, 'Position');
-            uicontrol('Parent', progress, 'Style', 'pushbutton', ...
-                'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
-                'String', 'Terminate', ...
-                'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
-                'Visible', 'on');
-            setappdata(progress, 'terminating', 0);
-            
-            waitbar(0);
-            
+            if obj.dispwait
+                progress = waitbar(0, 'Computations in progress...', ...
+                    'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
+                setappdata(progress, 'canceling', 0);
+                posProg = get(progress, 'Position');
+                uicontrol('Parent', progress, 'Style', 'pushbutton', ...
+                    'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
+                    'String', 'Terminate', ...
+                    'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
+                    'Visible', 'on');
+                setappdata(progress, 'terminating', 0);
+
+                waitbar(0);
+            end;
+
             absc = logspace(2, ceil(log10(L)), samples);
             oord = zeros(1, length(absc));
             
@@ -1072,7 +1093,7 @@ classdef AntArray
     end
     methods (Access='public')
         %% Function to compute and plot the fields for the YZ-mode
-        function E_YZ(obj, d, L, ss)
+        function ptrn = E_YZ(obj, d, L, ss)
             % INPUT
             %   obj:    AntArray object
             %   d:      Distance to the array [m]
@@ -1084,18 +1105,20 @@ classdef AntArray
             plotdata = zeros(ext_dim); % Larger to be able to plot evth
 
             % Create waitbar
-            progress = waitbar(0, 'Computations in progress...', ...
-                'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
-            setappdata(progress, 'canceling', 0);
-            posProg = get(progress, 'Position');
-            uicontrol('Parent', progress, 'Style', 'pushbutton', ...
-                'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
-                'String', 'Terminate', ...
-                'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
-                'Visible', 'on');
-            setappdata(progress, 'terminating', 0);
-            
-            waitbar(0);
+            if obj.dispwait
+                progress = waitbar(0, 'Computations in progress...', ...
+                    'CreateCancelBtn', 'setappdata(gcbf, ''canceling'', 1)');
+                setappdata(progress, 'canceling', 0);
+                posProg = get(progress, 'Position');
+                uicontrol('Parent', progress, 'Style', 'pushbutton', ...
+                    'Position', [posProg(3)*0.12, posProg(4)*0.22, 80, 23], ...
+                    'String', 'Terminate', ...
+                    'Callback', 'setappdata(gcbf, ''terminating'', 1)', ...
+                    'Visible', 'on');
+                setappdata(progress, 'terminating', 0);
+
+                waitbar(0);
+            end;
             
             % Search for symmetry
             dim_z = dim;
@@ -1122,16 +1145,18 @@ classdef AntArray
                 end;
                 plotdata(ext_dim-i,:) = slice;
                 
-                waitbar(i/dim_z);
-                if getappdata(progress, 'canceling')
-                    close all;
-                    delete(progress);
-                    return;
-                elseif getappdata(progress, 'terminating')
-                    close all;
-                    delete(progress);
-                    throw(MException('MyERR:Terminated', ...
-                    'Program terminated by user'));
+                if obj.dispwait
+                    waitbar(i/dim_z);
+                    if getappdata(progress, 'canceling')
+                        close all;
+                        delete(progress);
+                        return;
+                    elseif getappdata(progress, 'terminating')
+                        close all;
+                        delete(progress);
+                        throw(MException('MyERR:Terminated', ...
+                        'Program terminated by user'));
+                    end;
                 end;
             end;
             
@@ -1141,8 +1166,18 @@ classdef AntArray
             if dim_z ~= dim
                 plotdata(end/2:-1:1, :) = plotdata(end/2:end-1, :);
             end;
+            
+            ptrn = plotdata(1:end-1, 1:end-1);
 
-            waitbar(1, progress, 'Generating plots...');
+            if ~obj.plotres
+                if obj.dispwait
+                    delete(progress);
+                end;
+                return
+            end;
+            if obj.dispwait
+                waitbar(1, progress, 'Generating plots...');
+            end;
 
             % ========================================================================
             % Plot
@@ -1238,14 +1273,16 @@ classdef AntArray
             savname = ['pattern' obj.name '_' mat2str(d)];
             print_plots(gcf, savname);
             export_dat([0 absc(1,:)./fact; oord(:,1)./fact plotdata], savname);
-
-            delete(progress);
+            
+            if obj.dispwait
+                delete(progress);
+            end;
 
             close all
         end
         
         %% Function to generate a BW plot from existing plot
-        function E_BW(obj, d, theta)
+        function ptrn = E_BW(obj, d, theta)
             %INPUT
             %   d:  Distance to the array [m]
             
@@ -1277,6 +1314,13 @@ classdef AntArray
             
             plotdata = zeros(size(A,1), size(A,2));
             plotdata(A >= obj.min_E)=1;
+            
+            ptrn = plotdata(1:end-1, 1:end-1);
+            
+            if ~obj.plotres
+                delete(progress);
+                return
+            end;
             
             % ========================================================================
             % Plot
@@ -1402,7 +1446,7 @@ classdef AntArray
         end
         
         %% Function to compute and plot the fields for the XY-mode
-        function E_XY(obj, d, L, ss)
+        function ptrn = E_XY(obj, d, L, ss)
             % INPUT
             %   obj:    AntArray object
             %   d:      Distance to the array (maximal plot distance) [m]
@@ -1451,7 +1495,14 @@ classdef AntArray
                     'Program terminated by user'));
                 end;
             end;
+            
+            ptrn = plotdata(1:end-1, 1:end-1);
 
+            if ~obj.plotres
+                delete(progress);
+                return
+            end;
+            
             waitbar(1, progress, 'Generating plots...');
 
             % ==============================================================
@@ -1573,7 +1624,7 @@ classdef AntArray
         end
         
         %% Function to compute and plot the fields for the theta-mode
-        function E_theta(obj, d, L, ss, theta)
+        function ptrn = E_theta(obj, d, L, ss, theta)
             % INPUT
             %   obj:    AntArray object
             %   d:      Distance to the array (maximal plot distance) [m]
@@ -1630,6 +1681,13 @@ classdef AntArray
                     throw(MException('MyERR:Terminated', ...
                     'Program terminated by user'));
                 end;
+            end;
+            
+            ptrn = plotdata(1:end-1, 1:end-1);
+            
+            if ~obj.plotres
+                delete(progress);
+                return
             end;
 
             waitbar(1, progress, 'Generating plots...');
@@ -1967,10 +2025,12 @@ classdef AntArray
         function input_pwr = inpower(obj)
             [elcol, elrow] = find(obj.M ~= 0);
             
-            progress = waitbar(0, 'Power computations in progress...',...
-                'CreateCancelBtn',...
-                'setappdata(gcbf,''canceling'',1)');
-            setappdata(progress, 'canceling', 0);
+            if obj.dispwait
+                progress = waitbar(0, 'Power computations in progress...',...
+                    'CreateCancelBtn',...
+                    'setappdata(gcbf,''canceling'',1)');
+                setappdata(progress, 'canceling', 0);
+            end;
             
             input_pwr = zeros(size(obj.M,1), size(obj.M,1), numel(elcol));
             
@@ -2033,17 +2093,21 @@ classdef AntArray
                         input_pwr(row,col,j) = input_pwr(row,col,j)*I1*conj(M_tmp(j));
                     end;                        
                 end;
-                waitbar(i/numel(obj.M));
-                if getappdata(progress, 'canceling')
-                    close all;
-                    delete(progress);
-                    input_pwr = -1;
-                    return;
+                if obj.dispwait
+                    waitbar(i/numel(obj.M));
+                    if getappdata(progress, 'canceling')
+                        close all;
+                        delete(progress);
+                        input_pwr = -1;
+                        return;
+                    end;
                 end;
             end;
             input_pwr = abs(sum(sum(sum(input_pwr(:,:,:)))));
             
-            delete(progress);
+            if obj.dispwait
+                delete(progress);
+            end;
         end
         
         %% Function to normalize the currents to match desired input power
@@ -2221,7 +2285,7 @@ classdef AntArray
                         else
                             sq = ones(quant);
                         end;
-                        M(y:y+sq_dim-1, x:x+sq_dim-1) = sq(:,:);
+                        M(y:y+quant-1, x:x+quant-1) = sq(:,:);
                     end;
                 end;
             end;
