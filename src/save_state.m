@@ -1,4 +1,4 @@
-function save_state(pop, eva, iter)
+function fname = save_state(pop, eva, iter)
 % Save current state of the optimization algorithm
 %
 % INPUT:
@@ -45,5 +45,7 @@ for i=1:length(pop)
     arrangmt = AntArray.quantize(pop{i}.M, 1);
     save([dir 'arrangement_' num2str(i) '.dat'], 'arrangmt', '-ASCII');
 end;
+
+fname = prefix_folder_name(end-6:end-1);
 
 end

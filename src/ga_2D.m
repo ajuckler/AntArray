@@ -253,7 +253,7 @@ try
 
         iter = iter+1;
 
-        save_state(pop, eva, iter);
+        fname = save_state(pop, eva, iter);
     end;
     dial.terminate();
 
@@ -291,7 +291,7 @@ xlabel('Iteration', 'Interpreter', 'latex', 'FontSize', 22);
 ylabel('Fitness', 'Interpreter', 'latex', 'FontSize', 22);
 set(gca, 'FontSize', 16);
 
-print_plots(gcf, 'fitness');
+print_plots(gcf, ['fitness_' fname]);
 close all
     
 end
