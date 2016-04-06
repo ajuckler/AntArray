@@ -3,7 +3,7 @@ function weight = fitness(ant, dist)
     % Apply weighting as on draft
     counter_th = 2;
     step = 30;
-    const = step*step*1000*1000; % converted to m²
+    const = step*step/1000/1000; % converted to m²
     
     ant = ant.disableWaitbars();
     

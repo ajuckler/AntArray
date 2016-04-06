@@ -146,8 +146,9 @@ try
     save_state(pop, eva, iter);
     dial.setSubString(['Generation ' num2str(iter) ' data saved']);
     dial.terminate();
-
-    while iter <= max_iter
+    
+    condition = 0;
+    while iter <= max_iter && ~condition
         dial.setMainString(['Working on generation ' num2str(iter) '...']);
 
         % Pass best individuals through
@@ -246,12 +247,31 @@ try
             end;
             eva_tmp(:, i) = vals;
             pop_tmp(:, i) = inds;
+                
         end;
 
         eva = eva_tmp;
         pop = pop_tmp;
 
         iter = iter+1;
+        
+        % Evaluate condition
+        % ------------------
+        if progress_data(iter,1) < 1.01*progress_data(iter,2)
+            condition = 1;
+        elseif iter >= .1*max_iter
+            last_data = progress_data(iter-.1*max_iter:iter, :);
+            last_max = last_data(:, 1);
+            last_mean = last_data(:, 2);
+            
+            if isempty(last_max(last_max ~= last_max(end)))
+                mean_mean = sum(last_mean)/numel(last_mean);
+                diff_mean = abs(last_mean - mean_mean);
+                if isempty(diff_mean(diff_mean > .05*mean_mean))
+                    condition = 1;
+                end;
+            end;
+        end;
 
         fname = save_state(pop, eva, iter);
     end;
@@ -262,6 +282,7 @@ try
 
     % Store max & mean for progress tracking
     progress_data(iter, :) = [optim_val sum(sum(eva))/numel(eva)];
+    
     delete(dial);
     
 catch ME
