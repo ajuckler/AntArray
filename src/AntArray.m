@@ -39,13 +39,25 @@ classdef AntArray
         function obj = AntArray(M, f, l, s)
             % INPUT
             %   M:      square matrix of antenna elements' excitation
+            %           can be path to file
             %   f:      frequency of operation [MHz]
             %   l:      length of dipole element [mm]
             %   s:      inter-element spacing [fraction of wavelength]
             
             if nargin == 0
                 M = zeros(64);
-            elseif size(M,1) ~= size(M,2)
+            elseif isa(M, 'char')
+                if ~strcmp(M(end-3:end), '.dat')
+                    M = [M '.dat'];
+                end;
+                if ~exist(M, 'file')
+                    error('MyErr:FileNotFound', ['file not found: ' M]);
+                else
+                    M = dlmread(M);
+                end;
+            end;
+                
+            if size(M,1) ~= size(M,2)
                 error('The matrix containing the excitations must be square');
             end;
             
@@ -405,8 +417,9 @@ classdef AntArray
             %    ss:     Step size for the plot [mm]
             %    theta:  [if mode=theta] angle wrt Z-axis [radians]
            
+            plot_val = obj.plotres;
+            
             if nargout == 2
-                plot_val = obj.plotres;
                 obj.plotres = 0;
             end;
             
@@ -1123,9 +1136,7 @@ classdef AntArray
             % Search for symmetry
             dim_z = dim;
             dim_y = dim;
-            
-            % use matrix as mask (~=), then sum
-            % !! for uneven dimensions
+
             if isempty(obj.M(obj.M ~= obj.M(end:-1:1,:)))
                 dim_z = ceil(dim_z/2);
             end;
@@ -1471,11 +1482,18 @@ classdef AntArray
             
             waitbar(0);
             
+            % Symmetry
+            dim_y = dim1;
+            
+            if isempty(obj.M(obj.M ~= obj.M(:, end:-1:1)))
+                dim_y = ceil(dim1/2);
+            end;
+            
             % Compute
             for i=1:dim2
                 x = (i-1)*ss;
                 slice = plotdata(i,:);
-                parfor j=1:dim1
+                parfor j=1:dim_y
                     y = (j-1)*ss - L/2;
                     E = zeros(1,3);
                     [E(1), E(2), E(3)] = E_array(obj, x, y, 0);
@@ -1494,6 +1512,10 @@ classdef AntArray
                     throw(MException('MyERR:Terminated', ...
                     'Program terminated by user'));
                 end;
+            end;
+            
+            if dim_y ~= dim1
+                plotdata(:, end/2:end-1) = plotdata(:, end/2:-1:1);
             end;
             
             ptrn = plotdata(1:end-1, 1:end-1);

@@ -109,12 +109,10 @@ try
     end;
 
     end_index = min(length(start_pop), pop_sz);
-    if end_index == 0
-        end_index = end_index + 1;
-    else
+    if end_index ~= 0
         pop(1:end_index) = start_pop(1:end_index);
     end;
-    for i=end_index:pop_sz
+    for i=end_index+1:pop_sz
         chrom = randi([0 1], 1, chrom_sz*chrom_sz);
         pop{i} = AntArray(chrom2mat(chrom, quant));
         dial.terminate();
