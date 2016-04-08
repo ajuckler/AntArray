@@ -1,10 +1,11 @@
 %GA_2D Optimize the array arrangement using a genetic algorithm
-%   [OPTIM_SOL, OPTIM_VAL] = GA_2D(DIST, START_POP, QUANT)
 %
 %   The algorithm parameters are hard-coded as follow:
 %   chromosome size:    
-%       if QUANT:   1/4 of matrix size in START_POP or of AntArray default
-%       if ~QUANT:  1/2 of matrix size in START_POP or of AntArray default
+%       if QUANT(see further):  1/4 of matrix size in START_POP or of
+%                               AntArray default
+%       if ~QUANT:              1/2 of matrix size in START_POP or of 
+%                               AntArray default
 %   population size:            50
 %   tournament participants:    2
 %   chromosomes passed through: 2
@@ -15,17 +16,23 @@
 %   GENCROSSOVERPATTERN function.
 %   The fitness of the individuals is evaluated with the FITNESS function.
 %
+%
+%   [OPTIM_SOL, OPTIM_VAL] = GA_2D(DIST, START_POP, QUANT)
 %   INPUT:
 %       DIST:       distance from the array where the fitness function will
 %                   be evaluated [mm]
 %       START_POP:  (optional) individuals to be included in the population
-%                   [cell array of AntArray elements]
+%                   [cell array of AntArray elements] OR array size
 %       QUANT:      (optional) is the array arrangement quantized?
 %                   [boolean]
 %
 %   OUTPUT:
 %       OPTIM_SOL:  the optimal array arrangement [AntArray]
 %       OPTIM_VAL:  fitness of the optimal arrangement [double]
+%
+%   [...] = GA_2D(PATH) resumes the algorithm
+%   INPUT:
+%       PATH:   path to the folder containing the previous results
 %
 %   See also FITNESS GENCROSSOVERPATTERN CHROM2MAT MAT2CHROM
 
@@ -60,93 +67,227 @@ if mod(pop_sz, trn_sz) ~= 0
     pop_sz = pop_sz + mod(pop_sz, trn_sz);
 end;
 
-try
-    % Generate population
-    % -------------------
-    pop = cell(1, pop_sz);
-    if ~isempty(start_pop) % if some elements already given, check
-        if iscell(start_pop)
-            for i=1:length(start_pop)
-                if ~isa(start_pop{i}, 'AntArray')
-                    error('START_POP is not of type AntArray');
-                elseif quant
-                    start_pop{i} = AntArray(...
-                                   AntArray.quantize(start_pop{i}.M, 2, 1));
-                end;
-            end;
-        else
-            if ~isa(start_pop, 'AntArray')
-                error('START_POP is not of type AntArray');
-            elseif quant
-                tmp = AntArray(...
-                               AntArray.quantize(start_pop.M, 2, 1));
-                start_pop = cell(1,1);
-                start_pop{1} = tmp;
-            else
-                tmp = start_pop;
-                start_pop = cell(1,1);
-                start_pop{1} = tmp;
-            end;
-        end;
-        chrom_sz = size(start_pop{1}.M, 1);
-    end;
+cfg = [pop_sz, trn_sz, fit_sz, mut_prob, max_iter];
 
+% Start parallel pool
+if verLessThan('matlab','8.2')
+    if ~matlabpool('size')
+        matlabpool open
+    end;
+else
+    if isempty(gcp('nocreate'))
+        poolobj = parpool;
+    end;
+end;
+
+% Clear preferences
+if ispref('ga_2D', 'save_folder')
+    rmpref('ga_2D');
+end;
+
+try
     % Init wait window
     dial = WaitDialog();
-    dial.setMainString('Starting genetic algorithm')
+    dial.setMainString('Starting...');
+    
+    if nargin > 1 || isa(dist, 'numeric')
+        dial.setSubString('Parsing initial population');
+        
+        cfg = [cfg quant dist];
+        save_state(cfg);
+        
+        % Generate population
+        % -------------------
+        pop = cell(1, pop_sz);
+        if ~isempty(start_pop) % if some elements already given, check
+            if iscell(start_pop)
+                for i=1:length(start_pop)
+                    if ~isa(start_pop{i}, 'AntArray')
+                        error('START_POP is not of type AntArray');
+                    elseif quant
+                        start_pop{i} = AntArray(...
+                                       AntArray.quantize(start_pop{i}.M, 2, 1));
+                    end;
+                end;
+            elseif isa(start_pop, 'numeric')
+                if mod(start_pop, 2)
+                    error('START_POP should be an even number');
+                else
+                    chrom_sz = start_pop;
+                end;
+            else
+                if ~isa(start_pop, 'AntArray')
+                    error('START_POP is not of type AntArray or numeric');
+                elseif quant
+                    tmp = AntArray(...
+                                   AntArray.quantize(start_pop.M, 2, 1));
+                    start_pop = cell(1,1);
+                    start_pop{1} = tmp;
+                else
+                    tmp = start_pop;
+                    start_pop = cell(1,1);
+                    start_pop{1} = tmp;
+                end;
+            end;
 
-    % Continue initial population generation
-    if isempty(chrom_sz)
-        temp = AntArray();
-        chrom_sz = size(temp.M, 1);
-        clearvars temp;
-    end;
-
-    if mod(chrom_sz, 4) == 0 && quant
-        chrom_sz = chrom_sz/4;
-    elseif mod(chrom_sz, 2) == 0 && ~quant
-        chrom_sz = chrom_sz/2;
-    end;
-
-    end_index = min(length(start_pop), pop_sz);
-    if end_index ~= 0
-        pop(1:end_index) = start_pop(1:end_index);
-    end;
-    for i=end_index+1:pop_sz
-        chrom = randi([0 1], 1, chrom_sz*chrom_sz);
-        pop{i} = AntArray(chrom2mat(chrom, quant));
-        dial.terminate();
-    end;
-
-    % Reshape for future parallel implementation
-    v_dim = pop_sz/trn_sz;
-    pop = reshape(pop, [trn_sz, v_dim]);
-    eva = zeros(trn_sz, v_dim);
-
-    dial.setMainString('Initial population generated');
-    dial.terminate();
-
-    % First evaluation
-    % ----------------
-    dial.setSubString('Computing fitnesses');
-    parfor i=1:v_dim
-        pop_ln = pop(:, i);
-        eva_ln = eva(:, i);
-        for j=1:trn_sz
-            eva_ln(j) = fitness(pop_ln{j}, dist);
+            if ~isa(start_pop, 'numeric')
+                chrom_sz = size(start_pop{1}.M, 1);
+            else
+                start_pop = [];
+            end;
         end;
-        eva(:, i) = eva_ln;
-    end;
-    
-    dial.terminate();
-    dial.setMainString('Initial population evaluated');
 
-    iter = 1;
-    progress_data = zeros(max_iter+1, 2);
-    save_state(pop, eva, iter);
-    dial.setSubString(['Generation ' num2str(iter) ' data saved']);
-    dial.terminate();
-    
+        dial.setSubString('Generating population')
+
+        % Continue initial population generation
+        if isempty(chrom_sz)
+            temp = AntArray();
+            chrom_sz = size(temp.M, 1);
+            clearvars temp;
+        end;
+
+        if mod(chrom_sz, 4) == 0 && quant
+            chrom_sz = chrom_sz/4;
+        elseif mod(chrom_sz, 2) == 0 && ~quant
+            chrom_sz = chrom_sz/2;
+        end;
+
+        end_index = min(length(start_pop), pop_sz);
+        if end_index ~= 0
+            pop(1:end_index) = start_pop(1:end_index);
+        end;
+        for i=end_index+1:pop_sz
+            chrom = randi([0 1], 1, chrom_sz*chrom_sz);
+            pop{i} = AntArray(chrom2mat(chrom, quant));
+            dial.terminate();
+        end;
+
+        % Reshape for future parallel implementation
+        v_dim = pop_sz/trn_sz;
+        pop = reshape(pop, [trn_sz, v_dim]);
+        eva = zeros(trn_sz, v_dim);
+
+        dial.setMainString('Initial population generated');
+        dial.terminate();
+
+        % First evaluation
+        % ----------------
+        dial.setSubString('Computing fitnesses');
+        parfor i=1:v_dim
+            pop_ln = pop(:, i);
+            eva_ln = eva(:, i);
+            for j=1:trn_sz
+                eva_ln(j) = fitness(pop_ln{j}, dist);
+            end;
+            eva(:, i) = eva_ln;
+        end;
+
+        dial.terminate();
+        dial.setMainString('Initial population evaluated');
+
+        iter = 1;
+        progress_data = zeros(max_iter+1, 2);
+        save_state(pop, eva, iter);
+        dial.setSubString('Initial data saved');
+        dial.terminate();
+        
+    elseif nargin == 1 && isa(dist, 'char')
+        dial.setSubString('Parsing old data');
+        
+        % Find folder
+        % -----------
+        if ~strcmp(dist(end), '/')
+            dist = [dist '/'];
+        end;
+        if ~exist(dist, 'dir') || ~exist([dist '1'], 'dir')
+            error('MyERR:InvalidFolder', ...
+                ['Specified folder does not exist or does not ' ...
+                'contain genetic algorithm data']);
+        else
+            setpref('ga_2D', 'save_folder', dist);
+        end;
+        
+        % Parsing cfg data
+        % ----------------
+        if ~exist([dist 'config.ga_2D'], 'file')
+            error 'Configuration file not found in the given folder';
+        end;
+        cfg = dlmread([dist 'config.ga_2D']);
+        dir = dist;
+        dist = cfg(end);
+        
+        if mod(cfg(1), cfg(2)) ~= 0
+            error 'Erroneous population or turnament size in config file';
+        elseif mod(cfg(3), cfg(2)) ~= 0
+            error 'Erroneous turnament or fitness size in config file';
+        elseif cfg(4) >= 1
+            error 'Too high mutation probability in config file';
+        elseif cfg(5) <= 1
+            error 'Invalid maximal iteration in config file';
+        end;
+        quant = cfg(end-1);
+        max_iter = cfg(5);
+        
+        % Parsing progress_data
+        % ---------------------
+        progress_data = zeros(max_iter+1, 2);
+        iter = 1;
+        while exist([dir num2str(iter)], 'dir') && iter < max_iter
+            if ~exist([dir num2str(iter) '/fitness.dat'], 'file')
+                break;
+            end;
+            
+            fit = dlmread([dir num2str(iter) '/fitness.dat']);
+            progress_data(iter, 1) = fit(1,2);
+            progress_data(iter, 2) = sum(fit(:,2))/size(fit,1);
+            pop_sz = size(fit,1);
+            
+            iter = iter + 1;
+        end;
+        
+        if pop_sz ~= cfg(1)
+            error 'Population size does not correspond with config data';
+        else
+            trn_sz = cfg(2);
+            fit_sz = cfg(3);
+            mut_prob = cfg(4);
+        end;
+        
+        % Population
+        % ----------
+        iter = iter - 1;
+        if iter < 1
+            error('There is not enough simulation data to resume simulations');
+        end;
+        pop = cell(1, pop_sz);
+        fold_name = [dir num2str(iter) '/arrangement_'];
+        for i=1:pop_sz
+            tmp = dlmread([fold_name num2str(i) '.dat']);
+            pop{i} = AntArray(tmp);
+            
+            quant_cond = sum(sum(tmp(1:2:end,:)~= tmp(2:2:end,:))) == 0;
+            quant_cond = quant_cond && sum(sum(tmp(:,1:2:end) ~= tmp(:,2:2:end))) == 0;
+            quant = quant_cond && quant;
+            
+            chrom_sz = size(tmp,1);
+        end;
+        
+        v_dim = pop_sz/trn_sz;
+        pop = reshape(pop, [trn_sz, v_dim]);
+        eva = reshape(fit(:,2), [trn_sz, v_dim]);
+        
+        if mod(chrom_sz, 4) == 0 && quant
+            chrom_sz = chrom_sz/4;
+        elseif mod(chrom_sz, 2) == 0 && ~quant
+            chrom_sz = chrom_sz/2;
+        end;
+        
+        dial.setMainString('Old data parsed');
+            
+    else
+        error('MyERR:InvalidInputArg', 'Invalid input argument DIST');
+    end;
+
     condition = 0;
     while iter <= max_iter && ~condition
         dial.setMainString(['Working on generation ' num2str(iter) '...']);
@@ -259,8 +400,8 @@ try
         % ------------------
         if progress_data(iter,1) < 1.01*progress_data(iter,2)
             condition = 1;
-        elseif iter >= .1*max_iter
-            last_data = progress_data(iter-.1*max_iter:iter, :);
+        elseif iter > .1*max_iter
+            last_data = progress_data(iter-round(.1*max_iter):iter, :);
             last_max = last_data(:, 1);
             last_mean = last_data(:, 2);
             
@@ -294,8 +435,21 @@ catch ME
     end;
 end;
 
+% Stop parallel pool
+if verLessThan('matlab','8.2') 
+    if matlabpool('size')
+        matlabpool close
+    end;
+else
+    if ~isempty(gcp('nocreate'))
+        delete(poolobj);
+    end;
+end;
+
 % Plot progress
 % -------------
+% IF fname NOT DEFINED
+% return
 figure(1);
 plot(1:length(progress_data), progress_data(:,1), '-b', ...
     'LineWidth', 2, 'DisplayName', 'max');
