@@ -459,8 +459,8 @@ plot(1:length(progress_data), progress_data(:,2), '-r', ...
 
 xlim([1 length(progress_data)]);
 
-L = legend('Location', 'northwest');
-set(L, 'Interpreter', 'latex');
+L = legend('Location', 'southeast');
+set(L, 'Interpreter', 'latex', 'FontSize', 20);
 
 xlabel('Iteration', 'Interpreter', 'latex', 'FontSize', 22);
 ylabel('Fitness', 'Interpreter', 'latex', 'FontSize', 22);
