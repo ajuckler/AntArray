@@ -17,7 +17,7 @@
 %   The fitness of the individuals is evaluated with the FITNESS function.
 %
 %
-%   [OPTIM_SOL, OPTIM_VAL] = GA_2D(DIST, START_POP, QUANT)
+%   [OPTIM_SOL, OPTIM_VAL] = GA_2D(DIST, START_POP, QUANT, MODE)
 %   INPUT:
 %       DIST:       distance from the array where the fitness function will
 %                   be evaluated [mm]
@@ -25,6 +25,7 @@
 %                   [cell array of AntArray elements] OR array size
 %       QUANT:      (optional) is the array arrangement quantized?
 %                   [boolean]
+%       MODE:       (optional) mode used for fitness computations
 %
 %   OUTPUT:
 %       OPTIM_SOL:  the optimal array arrangement [AntArray]
@@ -38,8 +39,13 @@
 
 %   Copyright 2016, Antoine Juckler. All rights reserved.
 
-function [optim_sol, optim_val] = ga_2D(dist, start_pop, quant)
+function [optim_sol, optim_val] = ga_2D(dist, start_pop, quant, mode)
 
+if nargin < 4
+    mode = 0;
+else
+    mode = (mode > 0);
+end;
 if nargin < 3
     quant = 1;
 else
@@ -93,7 +99,7 @@ try
     if nargin > 1 || isa(dist, 'numeric')
         dial.setSubString('Parsing initial population');
         
-        cfg = [cfg quant dist];
+        cfg = [cfg mode quant dist];
         save_state(cfg);
         
         % Generate population
@@ -177,7 +183,7 @@ try
             pop_ln = pop(:, i);
             eva_ln = eva(:, i);
             for j=1:trn_sz
-                eva_ln(j) = fitness(pop_ln{j}, dist);
+                eva_ln(j) = fitness(pop_ln{j}, dist, mode);
             end;
             eva(:, i) = eva_ln;
         end;
@@ -226,6 +232,7 @@ try
             error 'Invalid maximal iteration in config file';
         end;
         quant = cfg(end-1);
+        mode = cfg(end-2);
         max_iter = cfg(5);
         
         % Parsing progress_data
@@ -384,7 +391,7 @@ try
             % -----------------------
             for j=1:trn_sz
                 inds{j} = AntArray(chrom2mat(chroms{j}, quant));
-                vals(j) = fitness(inds{j}, dist);
+                vals(j) = fitness(inds{j}, dist, mode);
             end;
             eva_tmp(:, i) = vals;
             pop_tmp(:, i) = inds;

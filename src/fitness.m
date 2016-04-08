@@ -1,14 +1,24 @@
 %FITNESS Compute the fitness based on the beam volume
 %
 %   This function is used by GA_2D to associate a fitness on each array
-%   arrangement. The fitness is equal to the volume of the beam that is
-%   above the threshold electric field (as defined in ANTARRAY).
+%   arrangement. 
+%   The way of computing the fitness depends on the MODE parameter:
+%   For MODE = 0:   The fitness is equal to the volume of the beam that is
+%                   above the threshold electric field (as defined in
+%                   ANTARRAY).
+%   For MODE = 1:   The fitness is equal to the surface formed by the
+%                   intersection of the beam and a plane parallel to the
+%                   array at the given distance
 %
-%   WEIGHT = FITNESS(ANT, DIST)
+%   WEIGHT = FITNESS(ANT, DIST, MODE)
 %   INPUT:
 %       ANT:    ANTARRAY object, its YZ pattern will be computed
 %       DIST:   distance from the array plane at which the fitness should
 %               be evaluated [mm]
+%       MODE:   (optional) if set to 1, the fitness will be computed from
+%               the surface of the cut plane through the beam; if set to 0
+%               it will be computed from the volume of the beam
+%               [default = 0]
 %   OUTPUT:
 %       WEIGHT: the fitness [Vm]
 %
@@ -16,7 +26,13 @@
 
 %   Copyright 2016, Antoine Juckler. All rights reserved.
 
-function weight = fitness(ant, dist)
+function weight = fitness(ant, dist, mode)
+    if nargin < 3
+        mode = 0;
+    else
+        mode = (mode > 0);
+    end;
+    
     counter_th = 2;
     step = 30;
     const = step*step/1000/1000; % converted to m²
@@ -59,7 +75,10 @@ function weight = fitness(ant, dist)
     
     if isempty(ptrn)
         weight = 0;
-    else 
+    else
+        if mode == 1
+            ptrn = mask;
+        end;
         % Compute on symmetric part
         weight = 4*const*sum(sum(ptrn(2:end, 2:end)));
 
