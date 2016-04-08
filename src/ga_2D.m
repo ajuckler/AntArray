@@ -429,7 +429,7 @@ try
 catch ME
     switch ME.identifier
         case 'MyERR:Terminated'
-            warning('Operation terminated by user');
+            warning 'Operation terminated by user';
         otherwise
             rethrow(ME);
     end;
@@ -448,8 +448,11 @@ end;
 
 % Plot progress
 % -------------
-% IF fname NOT DEFINED
-% return
+if ~exist('fname', 'var')
+    warning 'Fitness plot not generated';
+    return;
+end;
+
 figure(1);
 plot(1:length(progress_data), progress_data(:,1), '-b', ...
     'LineWidth', 2, 'DisplayName', 'max');
@@ -465,6 +468,7 @@ set(L, 'Interpreter', 'latex', 'FontSize', 20);
 xlabel('Iteration', 'Interpreter', 'latex', 'FontSize', 22);
 ylabel('Fitness', 'Interpreter', 'latex', 'FontSize', 22);
 set(gca, 'FontSize', 16);
+hold off;
 
 print_plots(gcf, ['fitness_' fname]);
 close all

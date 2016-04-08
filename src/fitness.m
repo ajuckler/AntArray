@@ -1,6 +1,22 @@
+%FITNESS Compute the fitness based on the beam volume
+%
+%   This function is used by GA_2D to associate a fitness on each array
+%   arrangement. The fitness is equal to the volume of the beam that is
+%   above the threshold electric field (as defined in ANTARRAY).
+%
+%   WEIGHT = FITNESS(ANT, DIST)
+%   INPUT:
+%       ANT:    ANTARRAY object, its YZ pattern will be computed
+%       DIST:   distance from the array plane at which the fitness should
+%               be evaluated [mm]
+%   OUTPUT:
+%       WEIGHT: the fitness [Vm]
+%
+%   See also GA_2D ANTARRAY
+
+%   Copyright 2016, Antoine Juckler. All rights reserved.
+
 function weight = fitness(ant, dist)
-    % Gen 2D pattern at certain distance
-    % Apply weighting as on draft
     counter_th = 2;
     step = 30;
     const = step*step/1000/1000; % converted to m²
