@@ -60,6 +60,7 @@ classdef WaitDialog < handle
                 'String', '');
             
             set(obj.handler, 'Visible', 'on');
+            drawnow;
         end;
         function delete(obj)
             delete(obj.handler);
@@ -74,11 +75,11 @@ classdef WaitDialog < handle
         function setMainString(obj, str)
             set(obj.main_string, 'String', str);
             set(obj.sub_string, 'String', '');
-            set(obj.handler, 'Visible', 'on');
+            drawnow;
         end;
         function setSubString(obj, str)
             set(obj.sub_string, 'String', str);
-            set(obj.handler, 'Visible', 'on');
+            drawnow;
         end;
     end;
     methods (Static, Access='public')

@@ -23,8 +23,9 @@ else
 end;
 
 % Check whether matrix is quantized
-if (sum(sum(mat(1:2:end,:) == mat(2:2:end,:))) || ...
-    sum(sum(mat(:,1:2:end) == mat(:,2:2:end)))) && quant == 1
+if sum(sum(mat(1:2:end,:) ~= mat(2:2:end,:))) == 0 ...
+        && sum(sum(mat(:,1:2:end) == mat(:,2:2:end)))  == 0 ...
+        && quant == 1
     chrom = reshape(mat(:,1:2:end), 1, numel(mat)/2);
     chrom = chrom(1:2:end);
 elseif quant == 1
