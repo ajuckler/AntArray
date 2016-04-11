@@ -8,10 +8,6 @@ try
         i = i+1;
         dial.terminate();
     end;
-    parfor i=1:40
-        k = i;
-        dial.terminate();
-    end;
     delete(dial);
 catch ME
     switch ME.identifier

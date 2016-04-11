@@ -76,6 +76,8 @@ end;
 cfg = [pop_sz, trn_sz, fit_sz, mut_prob, max_iter];
 
 % Start parallel pool
+persistent poolobj
+
 if verLessThan('matlab','8.2')
     if ~matlabpool('size')
         matlabpool open
@@ -297,7 +299,7 @@ try
 
     condition = 0;
     while iter <= max_iter && ~condition
-        dial.setMainString(['Working on generation ' num2str(iter) '...']);
+        dial.setMainString(['Working on population ' num2str(iter) '...']);
 
         % Pass best individuals through
         % -----------------------------
@@ -412,7 +414,7 @@ try
             last_max = last_data(:, 1);
             last_mean = last_data(:, 2);
             
-            if isempty(last_max(last_max ~= last_max(end)))
+            if isempty(last_max(abs(last_max - last_max(end))<10^-6))
                 mean_mean = sum(last_mean)/numel(last_mean);
                 diff_mean = abs(last_mean - mean_mean);
                 if isempty(diff_mean(diff_mean > .05*mean_mean))
@@ -450,6 +452,7 @@ if verLessThan('matlab','8.2')
 else
     if ~isempty(gcp('nocreate'))
         delete(poolobj);
+        poolobj = [];
     end;
 end;
 
