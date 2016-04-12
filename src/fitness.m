@@ -20,7 +20,7 @@
 %               it will be computed from the volume of the beam
 %               [default = 0]
 %   OUTPUT:
-%       WEIGHT: the fitness [Vm]
+%       WEIGHT: the fitness [Vm | m²]
 %
 %   See also GA_2D ANTARRAY
 
@@ -39,7 +39,7 @@ function weight = fitness(ant, dist, mode)
     
     ant = ant.disableWaitbars();
     
-    [~, ptrn] = ant.genPattern(dist, 3000, 'YZ', step);
+    [~, ptrn] = ant.genPattern(dist, 3000, 'YZ-main', step);
     
     half = floor(length(ptrn)/2);
     ptrn = ptrn(half:end, half:end);
@@ -50,7 +50,7 @@ function weight = fitness(ant, dist, mode)
         ptrn_ln = ptrn(i, :);
         vect = zeros(1, length(ptrn));
         
-        if i > 1 && mask(i-1, 1) == 0
+        if i > 2 && mask(i-1, 1) == 0 && mask(i-2, 1) == 0
             break;
         end;
         

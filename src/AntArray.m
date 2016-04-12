@@ -7,7 +7,7 @@ classdef AntArray
         c0 = 299792458; % Speed of light in free space
         Z0 = 119.9169832*pi; % Impedance of free space
         opt_pts = 51;	% Number of discretization steps in one dimension
-        min_E = -1.3;   % Minimal electric field for reception [dB]
+        min_E = -1.3;   % Minimal electric field for reception [dB V/m]
     end
     properties (GetAccess='public', SetAccess='private')
         M;              % matrix of elements' excitation
@@ -402,6 +402,8 @@ classdef AntArray
             % Behaviour depends on the "mode" parameter:
             % If mode = 'YZ':
             %    Plot the fields on a square surface parallel to the YZ-plane
+            % If mode = 'YZ-main':
+            %    Plot only the main beam in the YZ-plane
             % If mode = 'XY':
             %    Plot the fields in the XY-plane and the field strength
             %    along the X-axis
@@ -426,7 +428,7 @@ classdef AntArray
             L = L/1000;
             d = d/1000;
 
-            if nargin < 5
+            if nargin < 5 || isempty(ss)
                 ss = obj.spacing;
             else
                 ss = ss/1000;
@@ -466,6 +468,21 @@ classdef AntArray
 
                 ptrn = E_XY(obj, d, L, ss);
                 fprintf('\tdone\n');
+            elseif strcmp(mode, 'YZ-main')
+                fprintf(['\tStep size: ' mat2str(ss*1000) 'mm\n']);
+                fprintf(['\tArray size: ' mat2str(length(obj.M)*obj.spacing*1000) 'mm\n']);
+                
+                 if length(d) > 1
+                    warning('Only the pattern at the latest distance will be returned');
+                end;
+
+                for i=1:length(d)
+                    fprintf(['\tGenerating pattern ' mat2str(i) ...
+                        ' of ' mat2str(length(d)) '...']);
+                    
+                    ptrn = E_YZ_main(obj, d(i), L, ss);
+                    fprintf('\tdone\n');
+                end;
             elseif strcmp(mode, 'YZ-BW')
                 for i=1:length(d)
                     fprintf(['\tGenerating BW pattern ' mat2str(i) ...
@@ -1288,6 +1305,206 @@ classdef AntArray
             if obj.dispwait
                 delete(progress);
             end;
+
+            close all
+        end
+        
+        %% Function to compute and plot the main fields for the YZ-mode
+        function ptrn = E_YZ_main(obj, d, L, ss)
+            % INPUT
+            %   obj:    AntArray object
+            %   d:      Distance to the array [m]
+            %   L:      Side length of the plot surface [m]
+            %   ss:     Step size for the plot [m]
+            
+            dim = round(L/ss)+1;
+            ext_dim = dim+1;
+            plotdata = ones(ext_dim); % Larger to be able to plot evth
+            plotdata = plotdata.*(AntArray.min_E-40); % 40dB below threshold
+                        
+            % Search for symmetry
+            % -------------------
+            dim_z = dim;
+            dim_y = dim;
+
+            if isempty(obj.M(obj.M ~= obj.M(end:-1:1,:)))
+                dim_z = ceil(dim_z/2);
+            end;
+            if isempty(obj.M(obj.M ~= obj.M(:, end:-1:1)))
+                dim_y = ceil(dim_y/2);
+            end;
+            
+            % Compute
+            % -------
+            counter_th = 2;
+            parfor i=1:dim_z
+                counter = 0;
+                
+                z = L/2 - (i-1)*ss;
+                slice = plotdata(ext_dim-i,:);
+
+                if dim_y ~= dim
+                    for j=dim_y:-1:1
+                        y = (j-1)*ss - L/2;
+                        E = zeros(1,3);
+                        [E(1), E(2), E(3)] = E_array(obj, d, y, z);
+                        val = 20*log10(sqrt(sum(abs(E(:)).^2)));
+                        slice(j) = val;
+                        
+                        if val < AntArray.min_E
+                            counter = counter + 1;
+                            if counter >= counter_th
+                                break;
+                            end;
+                        elseif counter ~= 0
+                            counter = 0;
+                        end;                        
+                    end;
+                else
+                    for j=floor(dim_y/2):-1:1
+                        y = (j-1)*ss - L/2;
+                        E = zeros(1,3);
+                        [E(1), E(2), E(3)] = E_array(obj, d, y, z);
+                        val = 20*log10(sqrt(sum(abs(E(:)).^2)));
+                        slice(j) = val;
+                        
+                        if val < AntArray.min_E
+                            counter = counter + 1;
+                            if counter >= counter_th
+                                break;
+                            end;
+                        elseif counter ~= 0
+                            counter = 0;
+                        end;   
+                    end;
+                    for j=ceil(dim_y/2):dim_y
+                        y = (j-1)*ss - L/2;
+                        E = zeros(1,3);
+                        [E(1), E(2), E(3)] = E_array(obj, d, y, z);
+                        val = 20*log10(sqrt(sum(abs(E(:)).^2)));
+                        slice(j) = val;
+                        
+                        if val < AntArray.min_E
+                            counter = counter + 1;
+                            if counter >= counter_th
+                                break;
+                            end;
+                        elseif counter ~= 0
+                            counter = 0;
+                        end;   
+                    end;
+                end;
+                    
+                plotdata(ext_dim-i,:) = slice;
+            end;
+            
+            if dim_y ~= dim
+                plotdata(:, end-1:-1:end/2) = plotdata(:, 1:end/2);
+            end;
+            if dim_z ~= dim
+                plotdata(end/2:-1:1, :) = plotdata(end/2:end-1, :);
+            end;
+            
+            ptrn = plotdata(1:end-1, 1:end-1);
+            
+            if ~obj.plotres
+                return
+            end;
+
+            % ========================================================================
+            % Plot
+            % Generate axes
+            if L/2 < 1/100
+                fact = 1000;
+            elseif L/2 < 1
+                fact = 100;
+            else
+                fact = 1;
+            end;
+
+            range = -L/2:ss:L/2';
+            range = range.*fact;
+            [absc, oord] = meshgrid([range range(end)+ss*fact]);  % Larger to be able to plot evth
+
+            % Plot field
+            figure(1);
+            surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
+                'LineStyle', 'none');
+            view(2);
+            hold on;
+            colormap jet;
+            cbar_h = colorbar('eastoutside');
+            
+            % Plot antenna
+            cmax = max(max(plotdata(:,:)));
+            antsize = length(obj.M)*obj.spacing*fact;
+            lpos = antsize/2;
+            plot3([-lpos+ss/2 lpos+ss/2], [-lpos+ss/2 -lpos+ss/2], ...
+                [cmax+5 cmax+5], '-k', 'LineWidth', 1);
+            plot3([-lpos+ss/2 lpos+ss/2], [lpos+ss/2 lpos+ss/2],...
+                [cmax+5 cmax+5], '-k', 'LineWidth', 1);
+            plot3([-lpos+ss/2 -lpos+ss/2], [-lpos+ss/2 lpos+ss/2],...
+                [cmax+5 cmax+5], '-k', 'LineWidth', 1);
+            plot3([lpos+ss/2 lpos+ss/2], [-lpos+ss/2 lpos+ss/2],...
+                [cmax+5 cmax+5], '-k', 'LineWidth', 1);
+            plot3(ss/2, ss/2, cmax+5, '-k', 'MarkerFaceColor', 'k', ...
+                'Marker', '+', 'MarkerSize', 5);
+
+            % Adapt color map
+            title(cbar_h, 'dB\,V/m', 'Interpreter', 'latex', 'FontSize', 16);
+            if obj.max_YZ ~= 0
+                cmax = obj.max_YZ-1;
+            end;
+            if obj.min_YZ ~= 0
+                cmin = obj.min_YZ+1;
+            else
+                cmin = min(min(plotdata));
+            end;
+            caxis([cmin-5+mod(cmin,5) cmax+5-mod(cmax,5)]);
+
+            % Adapt ticks
+            if mod(L*fact,4) == 0
+                tick_fact = 4;
+            elseif mod(L*fact,6) == 0
+                tick_fact = 6;
+            else
+                tick_fact = 2;
+            end;
+
+            spe_ticks = zeros(tick_fact+1,1);
+            for ii=1:length(spe_ticks)
+                spe_ticks(ii) = range(1) + (ii-1)*L*fact/tick_fact;
+            end;
+            spe_ticks_pos = spe_ticks+ss*fact/2;
+
+            xlim([range(1), range(end)+ss*fact]);
+            ylim([range(1), range(end)+ss*fact]);
+            set(gca, 'XTick', spe_ticks_pos, ...
+                'XTickLabel', spe_ticks);
+            set(gca, 'YTick', spe_ticks_pos, ...
+                'YTickLabel', spe_ticks);
+
+            % Set labels and title
+            title(['\textbf{Electric field at ', mat2str(d), '\,m}'], ...
+                'Interpreter', 'latex', 'FontSize', 24);
+
+            switch fact
+                case 1000
+                    unit = 'mm';
+                case 100
+                    unit = 'cm';
+                otherwise
+                    unit = 'm';
+            end;
+            xlabel(['${\rm y}_{\rm pos}$ [' unit ']'], ...
+                'Interpreter', 'latex', 'FontSize', 22);
+            ylabel(['${\rm z}_{\rm pos}$ [' unit ']'], ...
+                'Interpreter', 'latex', 'FontSize', 22);
+            set(gca, 'FontSize', 16);
+
+            savname = ['pattern' obj.name '_' mat2str(d)];
+            print_plots(gcf, savname);
+            export_dat([0 absc(1,:)./fact; oord(:,1)./fact plotdata], savname);
 
             close all
         end
