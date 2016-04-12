@@ -266,7 +266,7 @@ classdef AntArray
             
             tmp_M = M;
             
-            % Start values for optimization
+            % Excite elements appropriately for focusing
             if mod(size(M,1), 2) == 0
                 turnover = size(M,1)/2;
 
@@ -297,14 +297,8 @@ classdef AntArray
                 end;
             end;
             
-            % Optimize
-            pos = find(M);
-            if obj.opt_win(1) ~= 0
-                tmp_M = optArray(obj, pos, tmp_M, x, y, z);
-            end;
-            
             % Assign final values
-            obj.M(pos) = tmp_M(pos);
+            obj.M = tmp_M;
             obj.normalized = 0;
             
         end
@@ -2125,139 +2119,6 @@ classdef AntArray
            [E(1), E(2), E(3)] = obj.E_array(r*sin(theta)*cos(phi), ...
                     r*sin(theta)*sin(phi), r*cos(theta));
            E_strength = sum(abs(E(:)).^2);
-        end
-        
-        %% Function to optimize the antenna excitations for focusing
-        function M = optArray(obj, pos, in_M, x, y, z)
-            % Optimize the input array excitation using the
-            % Levenberg-Marquardt algorithm for a focus at the desired
-            % position with a minimum number of side lobes
-            %
-            % INPUT
-            %   obj:    AntArray object
-            %   pos:    vector with the position of the elements to tune
-            %   in_M:   excitation matrix to optimize
-            %   x,y,z:  desired focus position [m]
-            % OUTPUT
-            %   M:      matrix of optimized excitations
-            
-            phi0 = angle(in_M(pos));
-            
-            if verLessThan('matlab','8.1')
-                optoptions = optimset('Display', 'iter', ...
-                    'TolFun', 1e-5, 'TolX', 5e-6);
-            else
-                optoptions = optimset('lsqnonlin', ...
-                  'Display', 'final-detailed', ...
-                  'TolFun', 1e-5, 'TolX', 2.5e-6);
-            end;
-            
-            hlen = floor(size(obj.M,1)/2);
-            base = 1:hlen;
-            pos_tmp = repmat(base, hlen, 1);
-            pos_tmp = max(pos_tmp, pos_tmp');
-            
-            if mod(size(obj.M,1),2) == 0
-                pos_tmp = [pos_tmp(end:-1:1, end:-1:1) pos_tmp(end:-1:1, :);
-                        pos_tmp(:, end:-1:1) pos_tmp];
-            else
-                pos_tmp = [pos_tmp(end:-1:1, end:-1:1) base(end:-1:1)' pos_tmp(end:-1:1, :);
-                        base(end:-1:1) 0 base;
-                        pos_tmp(:, end:-1:1) base' pos_tmp];
-            end;
-            
-            max_dist = max(pos_tmp(pos))*obj.spacing;
-            
-            E = zeros(1,3);
-            [E(1), E(2), E(3)] = AntArray.E_dipole(obj.el_len, 1, obj.freq, x, max_dist, 0);
-            ref = max(abs(E).^2);
-            
-            bound = ones(length(phi0),1)*pi;
-            
-            phi = lsqnonlin(...
-                    @(phi)obj.optFunc(phi, pos, x, y, z, ref), ...
-                    phi0, -bound, bound, optoptions); % Invoke optimizer
-            
-            exc = arrayfun(@(el)exp(-1j*el), phi);
-            M(pos) = exc;
-            
-        end
-        
-        %% Function used for optimization
-        function F = optFunc(obj, phis, pos, x, y, z, ref)
-            % Compute the elements of the least-square sum
-            %
-            % INPUT
-            %   obj:    AntArray object
-            %   phis:   excitation angles
-            %   pos:    excited antennas' positions
-            %   x,y,z:  desired focal point
-            %   ref:    reference value used to settle field bounds
-            % OUTPUT
-            %   F:      vector containing the least-square terms
-            
-            lambda = obj.c0/obj.freq;
-            
-            % Compute step sizes
-            step = obj.opt_win(1)/obj.opt_pts;
-            nb_step_x = ceil(obj.opt_win(2)/step);
-            if mod(nb_step_x, 2) ~= 1
-                nb_step_x = nb_step_x-1;
-            end;
-            step_x = obj.opt_win(2)/nb_step_x;
-            
-            % Init F
-            F = zeros(obj.opt_pts, obj.opt_pts, nb_step_x);
-            
-            % Create antenna matrix
-            M_opt = zeros(size(obj.M,1));
-            M_opt(pos) = arrayfun(@(el)exp(-1j*el),phis);
-            
-            turn = (obj.opt_pts+1)/2;
-            turn_x = (nb_step_x+1)/2;
-            
-            for i=1:nb_step_x
-                xx = (i-turn_x)*step_x + x;
-                for j=1:obj.opt_pts
-                    zz = (turn-j)*step + z;
-                    for k=1:obj.opt_pts
-                        yy = (k-turn)*step + y;
-                        
-                        [E(1), E(2), E(3)] = obj.E_array(xx, yy, zz, M_opt);
-                        En2 = sum(abs(E).^2);
-                        
-                        dn = (x-xx)^2 + (y-yy)^2 + (z-zz)^2;
-%                         rho = xx^2 + yy^2 + zz^2;
-                        
-                        if dn < 4*lambda
-                            gn2 = max([length(pos)-1,1.5])*ref;
-                            Gn2 = 2*length(pos)*ref;
-                        elseif dn > 8*lambda
-                            gn2 = 0;
-                            Gn2 = ceil(length(pos)/2)*ref;
-                        else
-                            gn2 = 0;
-                            Gn2 = 2*length(pos)*ref;
-                        end;
-                        
-                        if gn2<En2 && En2<Gn2
-                            F(j, k, i) = 0;
-                        else                   
-                            F(j, k, i) = 2*(Gn2 - En2)*(gn2-En2)...
-                                + abs(Gn2-En2)*abs(gn2-En2);
-                        end;
-                    end
-                end
-            end
-            
-            % define G, g, target point radius
-            % Evaluate E_dipole for each defined element
-            
-            % Maple for Jacobian
-            % Use atan of phase to avoid periodicity problems
-            
-            % OUTPUT MUST BE ARRAY
-            
         end
         
         %% Function to compute the array input power
