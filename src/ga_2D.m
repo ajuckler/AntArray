@@ -296,6 +296,9 @@ try
     else
         error('MyERR:InvalidInputArg', 'Invalid input argument DIST');
     end;
+    
+    % Store max & mean for progress tracking
+    progress_data(iter, :) = [max(eva(:)) sum(sum(eva))/numel(eva)];
 
     condition = 0;
     while iter <= max_iter && ~condition
@@ -312,9 +315,6 @@ try
             pop{pos+i-1} = temp_ind;
             eva(pos+i-1) = temp_val;
         end;
-
-        % Store max & mean for progress tracking
-        progress_data(iter, :) = [eva(1) sum(sum(eva))/numel(eva)];
 
         pop_tmp = pop;  % Tmp variable needed for parfor-loop
         eva_tmp = eva;
@@ -405,16 +405,17 @@ try
 
         iter = iter+1;
         
+        % Store max & mean for progress tracking
+        progress_data(iter, :) = [max(eva(:)) sum(sum(eva))/numel(eva)];
+        
         % Evaluate condition
         % ------------------
-        if progress_data(iter,1) < 1.01*progress_data(iter,2)
-            condition = 1;
-        elseif iter > .1*max_iter
-            last_data = progress_data(iter-round(.1*max_iter):iter, :);
+        if iter > round(.25*max_iter)
+            last_data = progress_data(iter-round(.25*max_iter):iter, :);
             last_max = last_data(:, 1);
             last_mean = last_data(:, 2);
             
-            if isempty(last_max(abs(last_max - last_max(end))<10^-6))
+            if isempty(last_max(abs(last_max - last_max(end))>10^-6))
                 mean_mean = sum(last_mean)/numel(last_mean);
                 diff_mean = abs(last_mean - mean_mean);
                 if isempty(diff_mean(diff_mean > .05*mean_mean))
@@ -429,9 +430,6 @@ try
 
     [optim_val, pos] = max(eva(:));
     optim_sol = pop{pos};
-
-    % Store max & mean for progress tracking
-    progress_data(iter, :) = [optim_val sum(sum(eva))/numel(eva)];
     
     delete(dial);
     

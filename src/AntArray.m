@@ -1496,7 +1496,7 @@ classdef AntArray
                 'Interpreter', 'latex', 'FontSize', 22);
             set(gca, 'FontSize', 16);
 
-            savname = ['pattern' obj.name '_' mat2str(d)];
+            savname = ['pattern' obj.name '_' mat2str(d) '_main'];
             print_plots(gcf, savname);
             export_dat([0 absc(1,:)./fact; oord(:,1)./fact plotdata], savname);
 
