@@ -47,11 +47,21 @@ classdef AntArray
             if nargin == 0
                 M = zeros(64);
             elseif isa(M, 'char')
+                if strcmp(M(end-3:end), '.mat')
+                    M = M(1:end-4);
+                end;
                 if ~strcmp(M(end-3:end), '.dat')
                     M = [M '.dat'];
                 end;
                 if ~exist(M, 'file')
-                    error('MyErr:FileNotFound', ['file not found: ' M]);
+                    M(end-2) = 'm';
+                    if ~exist(M, 'file')
+                        error('MyErr:FileNotFound', ['file not found: ' M]);
+                    else
+                        M = load(M);
+                        f = fieldnames(M);
+                        M = M.(f{1});
+                    end;
                 else
                     M = dlmread(M);
                 end;
@@ -1111,6 +1121,7 @@ classdef AntArray
 
             savname = ['elements' obj.name];
             print_plots(gcf, savname);
+            export_dat(round(abs(obj.M)), savname, 1);
 
             close all
         end

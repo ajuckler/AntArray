@@ -2,7 +2,13 @@
 % Copyright 2015, Antoine JUCKLER
 %
 
-function export_dat(h, path)
+function export_dat(h, path, mode)
+    if nargin < 3
+        mode = 0;
+    else
+        mode = (mode > 0);
+    end;
+    
     date_v = datevec(date);
     dirpath = cell(1,3);
     for i=1:3
@@ -22,5 +28,9 @@ function export_dat(h, path)
         mkdir(dirpath);
     end;
     
-    save([dirpath '/' path '.dat'], 'h', '-ASCII');
+    if mode == 0
+        save([dirpath '/' path '.dat'], 'h', '-ASCII');
+    else
+        save([dirpath '/' path '.mat'], 'h', '-MAT', '-v7.3');
+    end;
 end
