@@ -65,7 +65,8 @@ trn_sz = 2;         % tournament selection size
 fit_sz = trn_sz;    % number of elements passed through
                     %   must be a multiple of trn_sz
 
-mut_prob = 0.001;   % mutation probability
+mut_prob_df = 0.001;
+mut_prob = mut_prob_df; % mutation probability
 
 max_iter = 50;      % max number of iterations
 
@@ -114,7 +115,11 @@ try
                         error('START_POP is not of type AntArray');
                     elseif quant
                         start_pop{i} = AntArray(...
-                                       AntArray.quantize(start_pop{i}.M, 2, 1));
+                                       AntArray.quantize(...
+                                       round(abs(start_pop{i}.M)), 2, 1));
+                    else
+                        start_pop{i} = AntArray(...
+                                       round(abs(start_pop{i}.M)));
                     end;
                 end;
             elseif isa(start_pop, 'numeric')
@@ -128,11 +133,12 @@ try
                     error('START_POP is not of type AntArray or numeric');
                 elseif quant
                     tmp = AntArray(...
-                                   AntArray.quantize(start_pop.M, 2, 1));
+                                   AntArray.quantize(...
+                                   round(abs(start_pop.M)), 2, 1));
                     start_pop = cell(1,1);
                     start_pop{1} = tmp;
                 else
-                    tmp = start_pop;
+                    tmp = round(abs(start_pop));
                     start_pop = cell(1,1);
                     start_pop{1} = tmp;
                 end;
@@ -301,7 +307,7 @@ try
     progress_data(iter, :) = [max(eva(:)) sum(sum(eva))/numel(eva)];
 
     condition = 0;
-    while iter <= max_iter && ~condition
+    while iter <= max_iter
         dial.setMainString(['Working on population ' num2str(iter) '...']);
 
         % Pass best individuals through
@@ -423,6 +429,14 @@ try
                 end;
             end;
         end;
+        
+        % Force mutation if system is stable for too long
+        if condition
+            mut_prob = 0.25;
+            condition = 0;
+        else
+            mut_prob = mut_prob_df;
+        end;
 
         fname = save_state(pop, eva, iter);
     end;
@@ -459,6 +473,11 @@ end;
 if ~exist('fname', 'var')
     warning 'Fitness plot not generated';
     return;
+else
+    optim_sol = optim_sol.setName(fname);
+    optim_sol = optim_sol.setComments(sprintf([...
+        'Dist: ' num2str(dist/1000) '\nQuant: ' num2str(quant) ...
+        '\nMode: ' num2str(mode)]));
 end;
 
 figure(1);
