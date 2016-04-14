@@ -77,15 +77,41 @@ else
     end;
 end;
 
-figure(1);
+% Plot
+% ----
+avg = mean(plotdata);
+std_dev = std(plotdata);
+med = median(plotdata);
+disp(['Mean: ' num2str(avg)]);
+disp(['Standard deviation: ' num2str(std_dev)]);
+disp(['Median: ' num2str(med)]);
+
+fig1 = figure(1);
+axes('Parent', fig1, 'Position', [0.13 0.11 0.65 0.8150]);
+% sph = subplot(1,5,1:4);
+% sph2 = subplot(1,5,5);
 histogram(plotdata);
+
 hold on;
 fig_dim = axis;
+
 plot([plotdata(end) plotdata(end)], [fig_dim(3) fig_dim(4)], ...
     '--r', 'Linewidth', 1);
-title('Stability');
-ylabel('Count');
-xlabel('Fitness');
+text(1.02, .5, sprintf(['Mean: ' num2str(avg, 4) ...
+    '\nStd: ' num2str(std_dev, 4) ...
+    '\nMedian: ' num2str(med, 4) ...
+    '\nProb: ' num2str(prob)]), 'Units', 'normalized', ...
+     'Interpreter', 'latex', 'FontSize', 18);
+ 
+title('\textbf{Stability}', 'Interpreter', 'latex', 'FontSize', 24);
+ylabel('Count', 'Interpreter', 'latex', 'FontSize', 22');
+if mode == 0
+    fit_unit = 'Vm';
+else
+    fit_unit = '$m^2$';
+end;
+xlabel(['Fitness [' fit_unit ']'], 'Interpreter', 'latex', 'FontSize', 22);
+set(gca, 'FontSize', 16);
 hold off;
 
 savname = ['stability_' ant.name];
@@ -93,12 +119,5 @@ print_plots(gcf, savname);
 export_dat(plotdata, savname);
 
 close all;
-
-avg = mean(plotdata);
-std_dev = std(plotdata);
-med = median(plotdata);
-disp(['Mean: ' avg]);
-disp(['Standard deviation: ' std_dev]);
-disp(['Median: ' med]);
 
 end
