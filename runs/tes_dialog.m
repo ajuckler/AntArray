@@ -18,3 +18,9 @@ catch ME
             rethrow(ME);
     end;
 end;
+
+% disp(mat2str(matlabpool('size')));
+% 
+% parfor i=1:10
+%     disp([num2str(i) ' ' mat2str(matlabpool('size'))]);
+% end;

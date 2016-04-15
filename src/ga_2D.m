@@ -77,17 +77,7 @@ end;
 cfg = [pop_sz, trn_sz, fit_sz, mut_prob, max_iter];
 
 % Start parallel pool
-persistent poolobj
-
-if verLessThan('matlab','8.2')
-    if ~matlabpool('size')
-        matlabpool open
-    end;
-else
-    if isempty(gcp('nocreate'))
-        poolobj = parpool;
-    end;
-end;
+parallel_pool('start');
 
 % Clear preferences
 if ispref('ga_2D', 'save_folder')
@@ -457,23 +447,14 @@ catch ME
 end;
 
 % Stop parallel pool
-if verLessThan('matlab','8.2') 
-    if matlabpool('size')
-        matlabpool close
-    end;
-else
-    if ~isempty(gcp('nocreate'))
-        delete(poolobj);
-        poolobj = [];
-    end;
-end;
+parallel_pool('stop');
 
 % Plot progress
 % -------------
 if ~exist('fname', 'var')
     warning 'Fitness plot not generated';
     return;
-else
+elseif iter >= max_iter
     optim_sol = optim_sol.setName(fname);
     optim_sol = optim_sol.setComments(sprintf([...
         'Dist: ' num2str(dist/1000) '\nQuant: ' num2str(quant) ...

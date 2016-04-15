@@ -35,17 +35,7 @@ end;
 max_iter = 25;
 
 % Start parallel pool
-persistent poolobj
-
-if verLessThan('matlab','8.2')
-    if ~matlabpool('size')
-        matlabpool open
-    end;
-else
-    if isempty(gcp('nocreate'))
-        poolobj = parpool;
-    end;
-end;
+parallel_pool('start');
 
 plotdata = zeros(1, max_iter+1);
 plotdata(end) = fitness(ant, dist, mode);
@@ -66,16 +56,7 @@ end;
 plotdata = round(plotdata.*10^4)./10^4;
 
 % Stop parallel pool
-if verLessThan('matlab','8.2') 
-    if matlabpool('size')
-        matlabpool close
-    end;
-else
-    if ~isempty(gcp('nocreate'))
-        delete(poolobj);
-        poolobj = [];
-    end;
-end;
+parallel_pool('stop');
 
 % Plot
 % ----

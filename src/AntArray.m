@@ -422,7 +422,7 @@ classdef AntArray
             %    mode:   YZ, XY or theta see above
             %    ss:     Step size for the plot [mm]
             %    theta:  [if mode=theta] angle wrt Z-axis [radians]
-           
+            
             plot_val = obj.plotres;
             
             if nargout == 2
