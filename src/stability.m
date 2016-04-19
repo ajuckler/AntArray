@@ -69,9 +69,28 @@ disp(['Median: ' num2str(med)]);
 
 fig1 = figure(1);
 axes('Parent', fig1, 'Position', [0.13 0.11 0.65 0.8150]);
-% sph = subplot(1,5,1:4);
-% sph2 = subplot(1,5,5);
-histogram(plotdata);
+
+if verLessThan('matlab','8.2')
+    % http://stats.stackexchange.com/questions/798/calculating-optimal-number-of-bins-in-a-histogram-for-n-where-n-ranges-from-30
+    q1 = quantile(plotdata, 0.25);
+    q3 = quantile(plotdata, 0.75);
+    if q1 == q3
+        warning('MyWARN:bins', 'First ant third quartile were equal');
+        i = 1;
+        while q1 == q3 && i < 25
+            q1 = quantile(plotdata, 0.25 - 0.1*i);
+            q3 = quantile(plotdata, 0.75 + 0.1*i);
+            i = i+1;
+        end;
+    end;
+    h = 2*length(plotdata)^(-1/3)*(q3-q1);
+    nbins = round((max(plotdata)-min(plotdata))/h);
+    [counts, centers] = hist(plotdata, nbins);
+    bar(centers, counts, 'BarWidth', 1, 'FaceColor', [0.4,0.67,0.84]);
+else
+    histogram(plotdata);
+end;
+
 
 hold on;
 fig_dim = axis;
@@ -95,7 +114,7 @@ xlabel(['Fitness [' fit_unit ']'], 'Interpreter', 'latex', 'FontSize', 22);
 set(gca, 'FontSize', 16);
 hold off;
 
-savname = ['stability_' ant.name];
+savname = ['stability_' ant.name '_' num2str(round(prob*100))];
 print_plots(gcf, savname);
 export_dat(plotdata, savname);
 
