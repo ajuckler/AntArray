@@ -69,6 +69,8 @@ mut_prob_df = 0.001;
 mut_prob = mut_prob_df; % mutation probability
 
 max_iter = 50;      % max number of iterations
+mut_iter = round(.25*max_iter); % max number of iterations before
+                                %   change in mutation probability
 
 if mod(pop_sz, trn_sz) ~= 0
     pop_sz = pop_sz + mod(pop_sz, trn_sz);
@@ -354,7 +356,7 @@ try
                         spouse(cross_patrn == swap_part);   % Child
                     chroms{j} = temp_chrom;
                 end;
-                clearvars swap_part spouse
+                % clearvars swap_part spouse
             else
                 par1 = inds{1};     % Parents
                 par2 = inds{2};
@@ -379,7 +381,7 @@ try
                 mut_chrom = chroms{chrom_nb};
                 mut_chrom(pos) = ~mut_chrom(pos);
                 chroms{chrom_nb} = mut_chrom;
-%                 clearvars mut_chrom chrom_nb pos
+                % clearvars mut_chrom chrom_nb pos
                 mut_chrom = [];
                 chrom_nb = [];
                 pos = [];
@@ -406,8 +408,8 @@ try
         
         % Evaluate condition
         % ------------------
-        if iter > round(.25*max_iter)
-            last_data = progress_data(iter-round(.25*max_iter):iter, :);
+        if iter > mut_iter
+            last_data = progress_data(iter-mut_iter:iter, :);
             last_max = last_data(:, 1);
             last_mean = last_data(:, 2);
             
@@ -454,7 +456,7 @@ parallel_pool('stop');
 if ~exist('fname', 'var')
     warning 'Fitness plot not generated';
     return;
-elseif iter >= max_iter
+elseif iter > max_iter
     optim_sol = optim_sol.setName(fname);
     optim_sol = optim_sol.setComments(sprintf([...
         'Dist: ' num2str(dist/1000) '\nQuant: ' num2str(quant) ...
