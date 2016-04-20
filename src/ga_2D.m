@@ -9,7 +9,7 @@
 %   population size:            50
 %   tournament participants:    2
 %   chromosomes passed through: 2
-%   mutation probability:       0.001
+%   mutation probability:       0.001 bits
 %   maximum iteration:          50
 %
 %   The pattern for 1-'point' crossover is generated with the
@@ -300,7 +300,8 @@ try
 
     condition = 0;
     while iter <= max_iter
-        dial.setMainString(['Working on population ' num2str(iter) '...']);
+        dial.setMainString(['Working on population ' num2str(iter)...
+            ' of ' num2str(max_iter) '...']);
 
         % Pass best individuals through
         % -----------------------------
@@ -375,17 +376,25 @@ try
 
             % Mutation
             % --------
-            if rand <= mut_prob
-                pos = randi(chrom_sz*chrom_sz, 1);  % Mutation position
-                chrom_nb = randi([1 trn_sz], 1);    % Affected chromosome
-                mut_chrom = chroms{chrom_nb};
-                mut_chrom(pos) = ~mut_chrom(pos);
-                chroms{chrom_nb} = mut_chrom;
-                % clearvars mut_chrom chrom_nb pos
-                mut_chrom = [];
-                chrom_nb = [];
-                pos = [];
+            for j=1:trn_sz
+                mask = rand(chrom_sz);
+                mask = (mask <= mut_prob);
+                mut_chrom = chroms{j};
+                mut_chrom(mask == 1) = ...
+                    abs(mut_chrom(mask == 1) - 1);
+                chroms{j} = mut_chrom;
             end;
+%             if rand <= mut_prob
+%                 pos = randi(chrom_sz*chrom_sz, 1);  % Mutation position
+%                 chrom_nb = randi([1 trn_sz], 1);    % Affected chromosome
+%                 mut_chrom = chroms{chrom_nb};
+%                 mut_chrom(pos) = ~mut_chrom(pos);
+%                 chroms{chrom_nb} = mut_chrom;
+%                 % clearvars mut_chrom chrom_nb pos
+%                 mut_chrom = [];
+%                 chrom_nb = [];
+%                 pos = [];
+%             end;
 
             % Save new pop & evaluate
             % -----------------------
@@ -424,7 +433,7 @@ try
         
         % Force mutation if system is stable for too long
         if condition
-            mut_prob = 0.25;
+            mut_prob = 0.1;
             condition = 0;
         else
             mut_prob = mut_prob_df;
