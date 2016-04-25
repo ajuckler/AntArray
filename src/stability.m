@@ -32,7 +32,7 @@ else
     mode = (mode > 0);
 end;
 
-max_iter = 25;
+max_iter = 5;
 
 % Start parallel pool
 parallel_pool('start');
@@ -68,7 +68,8 @@ disp(['Standard deviation: ' num2str(std_dev)]);
 disp(['Median: ' num2str(med)]);
 
 fig1 = figure(1);
-axes('Parent', fig1, 'Position', [0.13 0.11 0.65 0.8150]);
+axes('Parent', fig1, 'Position', [0.13 0.11 0.65 0.8150], 'Box', 'on');
+hold on;
 
 if verLessThan('matlab','8.2')
     % http://stats.stackexchange.com/questions/798/calculating-optimal-number-of-bins-in-a-histogram-for-n-where-n-ranges-from-30
@@ -87,12 +88,16 @@ if verLessThan('matlab','8.2')
     nbins = round((max(plotdata)-min(plotdata))/h);
     [counts, centers] = hist(plotdata, nbins);
     bar(centers, counts, 'BarWidth', 1, 'FaceColor', [0.4,0.67,0.84]);
+    sp = centers(end) - centers(end-1);
+    xmin = centers(1) - sp/2;
+    xmin = xmin-0.05 + mod(xmin,0.05);
+    xmax = centers(end) + sp/2;
+    xmax = xmax+0.05 - mod(xmax,0.05);
+    xlim([xmin xmax]);    
 else
     histogram(plotdata);
 end;
 
-
-hold on;
 fig_dim = axis;
 
 plot([plotdata(end) plotdata(end)], [fig_dim(3) fig_dim(4)], ...
@@ -114,7 +119,7 @@ xlabel(['Fitness [' fit_unit ']'], 'Interpreter', 'latex', 'FontSize', 22);
 set(gca, 'FontSize', 16);
 hold off;
 
-savname = ['stability_' ant.name '_' num2str(round(prob*100))];
+savname = ['stability' ant.name '_' num2str(round(prob*100))];
 print_plots(gcf, savname);
 export_dat(plotdata, savname);
 

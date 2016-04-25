@@ -76,6 +76,10 @@ if mod(pop_sz, trn_sz) ~= 0
     pop_sz = pop_sz + mod(pop_sz, trn_sz);
 end;
 
+if trn_sz < 2
+    error 'Turnament size must be greater than 1';
+end;
+
 cfg = [pop_sz, trn_sz, fit_sz, mut_prob, max_iter];
 
 % Start parallel pool
