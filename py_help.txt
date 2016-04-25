@@ -1,0 +1,17 @@
+pdf2img.py
+USAGE:
+	pdf2img.py [-h] [-i [input file] ] [options]
+
+OPTIONS:
+	-h	--help		This help file.
+	-i	--input=	Input file.
+	-b	--bunch		Operate on a range of files
+	-g	--gif		Generate a gif file. Only possible together with the -b option.
+	-t	--theta=	Step-angle for theta-pattern
+
+		--delay=	Delay between each frame of the gif
+		--density=	Pixel density of the output file(s)
+		--fixed		Execute the bunch action at a fixed distance
+		--repeat	Repeat theta-pattern to make a full 360 revolution
+		--start=	Begin iteration
+		--max=		Max number of iterations

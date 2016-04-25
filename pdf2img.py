@@ -17,7 +17,7 @@ import math
 from subprocess import Popen
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta=', 'repeat', 'start=', 'max='])
+	opts, args = getopt.getopt(sys.argv[1:], 'i:gbt:h', ['input=', 'gif', 'stop', 'bunch', 'delay=', 'density=', 'fixed', 'theta=', 'repeat', 'start=', 'max=', 'help'])
 except getopt.GetoptError as err:
 	print(err)
 	sys.exit(2)
@@ -36,8 +36,16 @@ start = 0
 maxval = 20
 
 for o, a in opts:
-	if o in ('-i', '--input'):
+	if o in ('-h', '--help'):
+		help = open('py_help.txt')
+		for l in help.readlines():
+			print l
+		help.close()
+		sys.exit()
+	elif o in ('-i', '--input'):
 		infile = str(a)
+		print infile
+		print a
 		if infile.endswith('.pdf'):
 			infile = infile[:-len('.pdf')]
 	elif o in ('-g', '--gif'):
