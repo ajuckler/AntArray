@@ -5,6 +5,7 @@ run2.m
 *_back.m
 *_old.m
 *.asv
+*.lnk
 E_XY.m
 E_YZ.m
 E_array.m

@@ -406,12 +406,12 @@ classdef AntArray
             % Behaviour depends on the "mode" parameter:
             % If mode = 'YZ':
             %    Plot the fields on a square surface parallel to the YZ-plane
-            % If mode = 'YZ-main':
+            % If mode = 'YZ-MAIN':
             %    Plot only the main beam in the YZ-plane
             % If mode = 'XY':
             %    Plot the fields in the XY-plane and the field strength
             %    along the X-axis
-            % If mode = 'theta':
+            % If mode = 'THETA':
             %    Plot the fields in the plane at a given angle from the
             %    Z-axis
             %
@@ -419,7 +419,7 @@ classdef AntArray
             %    obj:    AntArray object
             %    d:      Distance to the array [mm]
             %    L:      Side length of the plot surface [mm]
-            %    mode:   YZ, XY or theta see above
+            %    mode:   YZ, XY or THETA see above
             %    ss:     Step size for the plot [mm]
             %    theta:  [if mode=theta] angle wrt Z-axis [radians]
             
@@ -428,6 +428,7 @@ classdef AntArray
             if nargout == 2
                 obj.plotres = 0;
             end;
+            mode = upper(mode);
             
             L = L/1000;
             d = d/1000;
@@ -472,7 +473,7 @@ classdef AntArray
 
                 ptrn = E_XY(obj, d, L, ss);
                 fprintf('\tdone\n');
-            elseif strcmp(mode, 'YZ-main')
+            elseif strcmp(mode, 'YZ-MAIN')
                 fprintf(['\tStep size: ' mat2str(ss*1000) 'mm\n']);
                 fprintf(['\tArray size: ' mat2str(length(obj.M)*obj.spacing*1000) 'mm\n']);
                 
@@ -497,7 +498,7 @@ classdef AntArray
             elseif strcmp(mode, 'XY-BW')
                 ptrn = E_BW(obj);
                 fprintf('\tdone\n');
-            elseif strcmp(mode, 'theta')
+            elseif strcmp(mode, 'THETA')
                 if isempty(theta)
                     theta = pi/4;
                 end;
@@ -506,7 +507,7 @@ classdef AntArray
 
                 ptrn = E_theta(obj, d, L, ss, theta);
                 fprintf('\tdone\n');
-            elseif strcmp(mode, 'theta-BW')
+            elseif strcmp(mode, 'THETA-BW')
                 if isempty(theta)
                     theta = pi/4;
                 end;
@@ -657,6 +658,7 @@ classdef AntArray
             waitbar(1, progress, 'Generating plots...');
             semilogx(absc, oord, 'LineWidth', 2);
             xlim([absc(1) absc(end)]);
+            hold on;
             
             view_axis = axis;
             if obj.max_E_strength ~= 0
@@ -670,7 +672,63 @@ classdef AntArray
                 min_val = view_axis(3);
             end;
             ylim([min_val-5+mod(min_val,5) max_val+5-mod(max_val,5)]);
-
+            
+            % Find fitline
+            pos = length(oord);
+            prev = oord(pos);
+            curr = oord(pos-1);
+            pos = pos-2;
+            while curr >= prev && pos > 0
+                prev = curr;
+                curr = oord(pos);
+                pos = pos - 1;
+            end;
+            if pos > .05*length(oord)
+                pmax = pos;
+                prev = oord(pos);
+                curr = oord(pos-1);
+                pos = pmax-2;
+                while pos > 0 && curr <= prev
+                    prev = curr;
+                    curr = oord(pos);
+                    pos = pos - 1;
+                end;
+                if pos ~= 0
+                    bias = mean(oord(1:pos));
+                    parea = axis;
+                    plot([parea(1) parea(2)], [bias bias], '--k', ...
+                        'LineWidth', 1);
+                    
+                    pos = length(oord);
+                    prev = oord(pos);
+                    curr = oord(pos-1);
+                    pos = pos-2;
+                    while prev <= bias && curr < bias
+                        prev = curr;
+                        curr = oord(pos);
+                        pos = pos - 1;
+                    end;
+                    dx = absc(pos+2) - absc(pos+1);
+                    dy = prev - curr;
+                    Dx = dx/dy*(bias-prev);
+                    vert = absc(pos+1)+Dx;
+                    plot([vert vert], [parea(3) parea(4)], '--k', ...
+                        'LineWidth', 1);
+                    
+                    text(absc(round(.96*length(absc))), ...
+                        bias - (parea(4)-parea(3))*.035, ...
+                        [num2str(bias,3) '\,dB\,V/m'], ...
+                        'HorizontalAlignment', 'right', ...
+                        'Interpreter', 'latex', 'FontSize', 18);
+                    text(absc(round(.96*length(absc))), ...
+                        bias - (parea(4)-parea(3))*.08, ...
+                        [int2str(round(vert)) '\,mm'], ...
+                        'HorizontalAlignment', 'right', ...
+                        'Interpreter', 'latex', 'FontSize', 18);
+                end;
+            end;
+            
+            % Adapt title and axes
             title(['\textbf{Field strength along (' mat2str(z) ', ' ...
                 mat2str(y) ')}'], 'Interpreter', 'latex', 'FontSize', 24);
             xlabel('Distance to the array centre [mm]', ...
@@ -678,6 +736,7 @@ classdef AntArray
             ylabel('Field strength [dB\,V/m]', ...
                 'Interpreter', 'latex', 'FontSize', 22);
             set(gca, 'FontSize', 16);
+            hold off;
 
             print_plots(gcf, ['E_strength' obj.name]);
 
@@ -1591,6 +1650,29 @@ classdef AntArray
 
             % Adapt color map
             caxis([0 1]);
+            
+            % If YZ, plot antenna
+            if ~isempty(d)
+                cmax = max(max(plotdata)) + 10;
+                antsize_x = length(obj.M)*obj.spacing*fact_x;
+                antsize_y = length(obj.M)*obj.spacing*fact_y;
+                lpos_x = antsize_x/2;
+                lpos_y = antsize_y/2;
+                plot3([-lpos_x+ss_x/2 lpos_x+ss_x/2], ...
+                    [-lpos_y+ss_y/2 -lpos_y+ss_y/2], ...
+                    [cmax+5 cmax+5], '-r', 'LineWidth', 1);
+                plot3([-lpos_x+ss_x/2 lpos_x+ss_x/2], ...
+                    [lpos_y+ss_y/2 lpos_y+ss_y/2],...
+                    [cmax+5 cmax+5], '-r', 'LineWidth', 1);
+                plot3([-lpos_x+ss_x/2 -lpos_x+ss_x/2], ...
+                    [-lpos_y+ss_y/2 lpos_y+ss_y/2], ...
+                    [cmax+5 cmax+5], '-r', 'LineWidth', 1);
+                plot3([lpos_x+ss_x/2 lpos_x+ss_x/2], ...
+                    [-lpos_y+ss_y/2 lpos_y+ss_y/2], ...
+                    [cmax+5 cmax+5], '-r', 'LineWidth', 1);
+                plot3(ss_x/2, ss_y/2, cmax+5, '-r', ...
+                    'MarkerFaceColor', 'r', 'Marker', '+', 'MarkerSize', 5);
+            end;
 
             % Adapt ticks
             if mod(2*x_dev(end)*fact_x,4) == 0
