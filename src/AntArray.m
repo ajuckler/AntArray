@@ -708,10 +708,10 @@ classdef AntArray
                         curr = oord(pos);
                         pos = pos - 1;
                     end;
-                    dx = absc(pos+2) - absc(pos+1);
+                    dx = log10(absc(pos+2)) - log10(absc(pos+1));
                     dy = prev - curr;
                     Dx = dx/dy*(bias-prev);
-                    vert = absc(pos+1)+Dx;
+                    vert = 10^(log10(absc(pos+2))+Dx);
                     plot([vert vert], [parea(3) parea(4)], '--k', ...
                         'LineWidth', 1);
                     
