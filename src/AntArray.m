@@ -683,6 +683,7 @@ classdef AntArray
                 curr = oord(pos);
                 pos = pos - 1;
             end;
+            pos = pos + 1;
             if pos > .05*length(oord)
                 pmax = pos;
                 prev = oord(pos);
@@ -696,22 +697,28 @@ classdef AntArray
                 if pos ~= 0
                     bias = mean(oord(1:pos));
                     parea = axis;
-                    plot([parea(1) parea(2)], [bias bias], '--k', ...
-                        'LineWidth', 1);
-                    
-                    pos = length(oord);
-                    prev = oord(pos);
-                    curr = oord(pos-1);
-                    pos = pos-2;
-                    while prev <= bias && curr < bias
-                        prev = curr;
-                        curr = oord(pos);
-                        pos = pos - 1;
+                    if bias > oord(pmax)
+                        plot([parea(1) parea(2)], [bias bias], '--', ...
+                            'Color', [1, 0.35, 0], 'LineWidth', 1.2);
+                        vert = absc(pmax);
+                    else
+                        plot([parea(1) parea(2)], [bias bias], '--k', ...
+                            'LineWidth', 1);
+                        pos = length(oord);
+                        prev = oord(pos);
+                        curr = oord(pos-1);
+                        pos = pos-2;
+                        while prev <= bias && curr < bias
+                            prev = curr;
+                            curr = oord(pos);
+                            pos = pos - 1;
+                        end;
+                        dx = log10(absc(pos+2)) - log10(absc(pos+1));
+                        dy = prev - curr;
+                        Dx = dx/dy*(bias-prev);
+                        vert = 10^(log10(absc(pos+2))+Dx);
                     end;
-                    dx = log10(absc(pos+2)) - log10(absc(pos+1));
-                    dy = prev - curr;
-                    Dx = dx/dy*(bias-prev);
-                    vert = 10^(log10(absc(pos+2))+Dx);
+                    
                     plot([vert vert], [parea(3) parea(4)], '--k', ...
                         'LineWidth', 1);
                     
