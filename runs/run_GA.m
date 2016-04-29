@@ -29,5 +29,5 @@ function run_GA(start_pop, dist, mode, quant)
             end;
         end;
     end;
-    parallel_pool('close');
+    parallel_pool('stop');
 end

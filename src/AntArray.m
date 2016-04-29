@@ -1407,7 +1407,7 @@ classdef AntArray
             
             % Compute
             % -------
-            counter_th = 2;
+            counter_th = 1;
             parfor i=1:dim_z
                 counter = 0;
                 

@@ -10,7 +10,7 @@
 %   tournament participants:    2
 %   chromosomes passed through: 2
 %   mutation probability:       0.001 bits
-%   maximum iteration:          50
+%   maximum iteration:          60 and more
 %
 %   The pattern for 1-'point' crossover is generated with the
 %   GENCROSSOVERPATTERN function.
@@ -55,6 +55,9 @@ if nargin < 2
     start_pop = [];
 end;
 
+optim_sol = [];
+optim_val = -1;
+
 % Parameters
 % ----------
 chrom_sz = [];      % chromosome size
@@ -68,8 +71,8 @@ fit_sz = trn_sz;    % number of elements passed through
 mut_prob_df = 0.001;
 mut_prob = mut_prob_df; % mutation probability
 
-max_iter = 50;      % max number of iterations
-mut_iter = round(.25*max_iter); % max number of iterations before
+max_iter = 60;      % max number of iterations
+mut_iter = round(.2*max_iter); % max number of iterations before
                                 %   change in mutation probability
 
 if mod(pop_sz, trn_sz) ~= 0
@@ -303,9 +306,10 @@ try
     progress_data(iter, :) = [max(eva(:)) sum(sum(eva))/numel(eva)];
 
     condition = 0;
-    while iter <= max_iter
+    off = 0;
+    while iter <= max_iter + off
         dial.setMainString(['Working on population ' num2str(iter)...
-            ' of ' num2str(max_iter) '...']);
+            ' of ' num2str(max_iter + off) '...']);
 
         % Pass best individuals through
         % -----------------------------
@@ -444,6 +448,18 @@ try
         end;
 
         fname = save_state(pop, eva, iter);
+        
+        % Add iterations if no good convergence
+        % -------------------------------------
+        if iter > max_iter + off
+            off_iter = round(.05*max_iter);
+            % Test enough identical samples
+            last_data = progress_data(iter-off_iter:iter, :);
+            last_max = last_data(:, 1);
+            if ~isempty(last_max(abs(last_max - last_max(end))>10^-6))
+                off = off + off_iter;
+            end;
+        end;
     end;
     dial.terminate();
 
