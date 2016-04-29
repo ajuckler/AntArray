@@ -33,7 +33,7 @@ function weight = fitness(ant, dist, mode)
         mode = (mode > 0);
     end;
     
-    counter_th = 2;
+    counter_th = 1;
     step = 30;
     const = step*step/1000/1000; % converted to m²
     
@@ -41,7 +41,7 @@ function weight = fitness(ant, dist, mode)
     
     [~, ptrn] = ant.genPattern(dist, 3000, 'YZ-main', step);
     
-    half = floor(length(ptrn)/2);
+    half = ceil(length(ptrn)/2);
     ptrn = ptrn(half:end, half:end);
     mask = zeros(length(ptrn));
     
@@ -50,7 +50,7 @@ function weight = fitness(ant, dist, mode)
         ptrn_ln = ptrn(i, :);
         vect = zeros(1, length(ptrn));
         
-        if i > 2 && mask(i-1, 1) == 0 && mask(i-2, 1) == 0
+        if i > 2 && mask(i-counter_th:i-1, 1) == 0
             break;
         end;
         
