@@ -458,6 +458,8 @@ try
             last_max = last_data(:, 1);
             if ~isempty(last_max(abs(last_max - last_max(end))>10^-6))
                 off = off + off_iter;
+                cfg(5) = max_iter + off;
+                save_state(cfg, [], iter);
             end;
         end;
     end;

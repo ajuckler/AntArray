@@ -10,6 +10,8 @@ function fname = save_state(pop, eva, iter)
 if nargin == 1 && length(pop) == numel(pop)
     config = 1;
     iter = 1;
+elseif isempty(eva) && length(pop) == numel(pop)
+    config = 1;
 else
     config = 0;
 end;
@@ -35,11 +37,11 @@ persistent prefix_folder_name
 % Determine sav folder
 if iter < 1
     error 'Invalid iter argument';
-elseif config
-    prefix_folder_name = datestr(now, 'yyyymmdd/HHMMSS/');
 elseif ispref('ga_2D', 'save_folder')
     prefix_folder_name = getpref('ga_2D', 'save_folder');
     rmpref('ga_2D', 'save_folder');
+elseif config && iter == 1
+    prefix_folder_name = datestr(now, 'yyyymmdd/HHMMSS/');
 end;
 
 if ~config
