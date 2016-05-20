@@ -59,8 +59,8 @@ classdef AntArray
                         error('MyErr:FileNotFound', ['file not found: ' M]);
                     else
                         M = load(M);
-                        f = fieldnames(M);
-                        M = M.(f{1});
+                        fl = fieldnames(M);
+                        M = M.(fl{1});
                     end;
                 else
                     M = dlmread(M);
