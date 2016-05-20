@@ -452,7 +452,7 @@ try
         % Add iterations if no good convergence
         % -------------------------------------
         if iter > max_iter + off
-            off_iter = round(.05*max_iter);
+            off_iter = round(.1*max_iter);
             % Test enough identical samples
             last_data = progress_data(iter-off_iter:iter, :);
             last_max = last_data(:, 1);

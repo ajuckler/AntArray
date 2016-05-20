@@ -2222,7 +2222,7 @@ classdef AntArray
         end
         
         %% Function to compute the array input power
-        function input_pwr = inpower(obj)
+        function input_pwr = inpower_old(obj)
             [elcol, elrow] = find(obj.M ~= 0);
             
             if obj.dispwait
@@ -2273,18 +2273,7 @@ classdef AntArray
                         input_pwr(row,col,j) = Zc*k0^2*ellen^2/6/pi;
                         input_pwr(row,col,j) = input_pwr(row,col,j)*I1*conj(M_tmp(j));
                     else
-                        if z_el2 < z_el1
-                            z_dist = -sqrt(z_dist);
-                        else
-                            z_dist = sqrt(z_dist);
-                        end;
-                        if y_el2 < y_el1
-                            y_dist = -sqrt(y_dist);
-                        else
-                            y_dist = sqrt(y_dist);
-                        end;
-                        ang = atan2(z_dist, y_dist);
-
+                        ang = atan((row-elcol(j))/(elrow(j)-col));
                         psi = k0*dist;
 
                         input_pwr(row,col,j) = Zc*k0^2*ellen^2/4/pi * ...
@@ -2303,6 +2292,96 @@ classdef AntArray
                     end;
                 end;
             end;
+            input_pwr = abs(sum(sum(sum(input_pwr(:,:,:)))));
+            
+            if obj.dispwait
+                delete(progress);
+            end;
+        end
+        
+        %% Function to compute the array input power
+        function input_pwr = inpower(obj)
+            [elcol, elrow, elval] = find(obj.M);
+            
+            if islogical(elval)
+                elval = ones(size(elval,1), size(elval,2));
+            end;
+            
+            if obj.dispwait
+                progress = waitbar(0, 'Power computations in progress...',...
+                    'CreateCancelBtn', ...
+                    'setappdata(gcbf,''canceling'',1)');
+                setappdata(progress, 'canceling', 0);
+            end;
+            
+            input_pwr = zeros(size(obj.M,1), size(obj.M,1), numel(elcol));
+            
+            k0 = 2*pi/obj.c0*obj.norm_freq;
+            ss = obj.spacing;
+            Zc = obj.Z0;
+            ellen = obj.el_len;
+            
+            % create dist & ang matrix
+            D = zeros(size(input_pwr, 1), size(input_pwr, 2));
+            Ang = D;
+            for i=1:size(D,1)
+                for j=1:i
+                    D(i,j) = sqrt(ss^2*((i-1)^2+(j-1)^2));
+                    Ang(i,j) = atan((j-1)/(i-1));
+                end;
+            end;
+            Ang(1,1:end) = 0;
+            
+            D2 = D';
+            D2(D ~= 0) = 0;
+            D = D + D2;
+            Ang2 = 2*pi - Ang';
+            Ang2(Ang ~= 0) = 0;
+            Ang(Ang ~= 0) = Ang(Ang ~= 0) + 3*pi/2;
+            Ang = Ang + Ang2;
+            Ang(1,1) = 0;
+            Ang(2:end,1) = 3*pi/2;
+            Ang2 = Ang';
+            
+            for i=1:numel(elcol)
+                y1 = elcol(i);
+                x1 = elrow(i);
+                tmp_D = [D(y1:-1:1, x1:-1:1) D(y1:-1:1, 2:end-x1+1);
+                    D(2:end-y1+1, x1:-1:1) D(2:end-y1+1, 2:end-x1+1)];
+                P1 = Ang(y1:-1:2, x1:-1:2) - pi;
+                P2 = Ang2(y1:-1:2, 1:end-x1+1) - 3*pi/2;
+                P3 = Ang2(1:end-y1+1, x1:-1:2) - pi/2;
+                tmp_A = [P1 P2;
+                    P3 Ang(1:end-y1+1, 1:end-x1+1)];
+                
+                for j=1:numel(elcol)
+                    y2 = elcol(j);
+                    x2 = elrow(j);
+                    if tmp_D(y2, x2) < 1e-8
+                        val = Zc*k0^2*ellen^2/6/pi;
+                        val = val * elval(i)*conj(elval(j));
+                    else
+                        psi = k0*tmp_D(y2, x2);
+                        ang = tmp_A(y2, x2);
+                        
+                        val = Zc*k0^2*ellen^2/4/pi * ...
+                            (2*(sin(psi)-psi*cos(psi))/psi^3 * (cos(ang))^2 + ...
+                            ((psi^2-1)*sin(psi)+psi*cos(psi))/psi^3 * (sin(ang))^2);
+                        val = val * elval(i)*conj(elval(j));
+                    end;
+                    input_pwr(y1, x1, j) = val;
+                end;
+                if obj.dispwait
+                    waitbar(i/numel(elcol));
+                    if getappdata(progress, 'canceling')
+                        close all;
+                        delete(progress);
+                        input_pwr = -1;
+                        return;
+                    end;
+                end;
+            end;
+            
             input_pwr = abs(sum(sum(sum(input_pwr(:,:,:)))));
             
             if obj.dispwait
