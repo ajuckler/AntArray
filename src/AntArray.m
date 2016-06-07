@@ -21,8 +21,8 @@ classdef AntArray
         min_YZ;         % min dB scale value for YZ-patterns
         max_E_strength; % max dB scale value for E-strength plot
         min_E_strength; % min dB scale value for E-strength plot
-        dir;            % matrix of element's groups
-        dir_str;        % cell array of element's groups
+        dire;            % matrix of element's groups
+        dire_str;        % cell array of element's groups
         comments;       % string to be printed on elements' plot
         plotres = 1;
         dispwait = 1;
@@ -34,7 +34,7 @@ classdef AntArray
     end
     methods
         %% Constructor
-        function obj = AntArray(M, f, l, s)
+        function obj = AntArray(M, f, l, s, cfg, prefs)
             % INPUT
             %   M:      square matrix of antenna elements' excitation
             %           can be path to file
@@ -42,7 +42,22 @@ classdef AntArray
             %   l:      length of dipole element [mm]
             %   s:      inter-element spacing [fraction of wavelength]
             
-            if nargin == 0 || isempty(M)
+            if nargin < 6 || isempty(prefs)
+                prefs = 0;
+            end;
+            if nargin < 5 || isempty(cfg)
+                cfg = 0;
+            end;
+            if nargin < 4 || isempty(s)
+                s = 1;
+            end;
+            if nargin < 3 || isempty(l)
+                l = 2.1826855509101;
+            end;
+            if nargin < 2 || isempty(f)
+                f = 60500;
+            end;
+            if nargin < 1 || isempty(M)
                 M = zeros(64);
             elseif isa(M, 'char')
                 if strcmp(M(end-3:end), '.mat')
@@ -69,21 +84,12 @@ classdef AntArray
                 error('The matrix containing the excitations must be square');
             end;
             
-            if nargin < 2
-                f = 60500;
-                l = 2.1826855509101;
-                s = 1;
-            end;
-            if isempty(f)
-                f = 60500;
-            end;
-            if isempty(l)
-                l = 2.1826855509101;
-            end;
-            if isempty(s)
-                s = 1;
-            end;
-            
+            cfg_out = loadCfg();
+            if prefs
+                
+            elseif cfg
+               
+            end
             
             obj.M = M;
             obj.freq = f*10^6;
@@ -102,9 +108,9 @@ classdef AntArray
             obj.pwr = 10*10^-3;
             obj.weight_ang = pi/18; % 10°
             
-            obj.dir = zeros(length(M));
-            obj.dir(M~=0) = 1;
-            obj.dir_str{1} = 'Unknown';
+            obj.dire = zeros(length(M));
+            obj.dire(M~=0) = 1;
+            obj.dire_str{1} = 'Unknown';
             obj.norm_freq = obj.freq;
             
             obj.sav_cfg(1);
@@ -242,13 +248,13 @@ classdef AntArray
                 error('Matrix sizes do not match');
             end;
             
-            dir_index = max(max(obj.dir))+1;
-            if dir_index == 1
-                dir_index = 2;
+            dire_index = max(max(obj.dire))+1;
+            if dire_index == 1
+                dire_index = 2;
             end;
-            obj.dir_str{dir_index} = ['(' mat2str(x) ', ' mat2str(y) ', ' ...
+            obj.dire_str{dire_index} = ['(' mat2str(x) ', ' mat2str(y) ', ' ...
                 mat2str(z) ')'];
-            obj.dir(M~=0) = dir_index;
+            obj.dire(M~=0) = dire_index;
             
             if ~isempty(M(M(M ~= 0)~=1))
                 pos = find(M(M ~= 0)~=1);
@@ -390,10 +396,10 @@ classdef AntArray
             end;
             
             obj.M = M;
-            obj.dir = M;
-            obj.dir(M~=0) = 1;
-            obj.dir_str = cell(1,1);
-            obj.dir_str{1} = 'Unknown';
+            obj.dire = M;
+            obj.dire(M~=0) = 1;
+            obj.dire_str = cell(1,1);
+            obj.dire_str{1} = 'Unknown';
             obj.normalized = 0;
             
             obj.sav_cfg();
@@ -1136,7 +1142,7 @@ classdef AntArray
             colors = {'m', 'c', 'r', 'g', 'b', 'k'};
             markers = {'o', '+', 'x', 's', 'd'};
             
-            maxval = max(max(obj.dir));
+            maxval = max(max(obj.dire));
             if maxval == 0
                 error('No antenna element was initiated');
             end;
@@ -1144,13 +1150,13 @@ classdef AntArray
             fig = figure();
             hold on;
             for i=1:maxval
-                if ~isempty(find(obj.dir,i))
-                    [rl, cl] = find(obj.dir == i);
+                if ~isempty(find(obj.dire,i))
+                    [rl, cl] = find(obj.dire == i);
                     rl = length(obj.M) - rl + 1;
                     colorind = mod(i, length(colors));
                     markerind = mod(ceil(i/length(markers)),length(markers));
                     plot(cl, rl, 'LineStyle', 'none', ...
-                        'DisplayName', [obj.dir_str{i} ' - ' mat2str(length(rl))], ...
+                        'DisplayName', [obj.dire_str{i} ' - ' mat2str(length(rl))], ...
                         'MarkerFaceColor', colors{colorind}, ...
                         'Marker', markers{markerind}, 'MarkerSize', 5);
                 end;
@@ -1190,6 +1196,40 @@ classdef AntArray
             export_dat(round(abs(obj.M)), savname, 1);
 
             close all
+        end
+        
+        %% Function to set preferences
+        function setPrefs(obj, key)
+            if nargin < 2
+                % Graphical interface
+                error 'No GUI developed';
+                return
+            elseif isempty(key)
+                error 'KEY argument required';
+            end;
+
+            keys = {'min_E', 'freq', 'norm_freq', 'el_len', 'spacing', ...
+            'min_XY', 'max_XY', 'min_YZ', 'max_YZ', ...
+            'min_E_strength', 'max_E_strength', 'pwr', 'weightang', ...
+            'plotres', 'dispwait'};
+            prop = '';
+            for i=1:length(keys)
+                if strcmpi(key, keys(i))
+                    prop = keys(i);
+                    break
+                end;
+            end;
+            if isempty(prop)
+                error 'Invalid KEY argument';
+            end;
+
+            propfield = eval(prop);
+            if strcmpi(prop, 'min_E')
+                setpref('AntArray', prop, AntArray.propfield);
+            else
+                setpref('AntArray', prop, obj.propfield);
+            end;
+
         end
         
     end
@@ -2403,8 +2443,8 @@ classdef AntArray
             end;
         end
         
-        %% Function to save current configuration
-        function sav_cfg(obj, init)
+        %% Function to save current configuration to file
+        function saveCfg(obj, init)
             if nargin < 2 || isempty(init)
                 init = 0;
             else
@@ -2520,6 +2560,44 @@ classdef AntArray
                 filename = 0;
             end; 
         end
+        
+        %% Load cfg file
+        function res = loadCfg()
+            % Find if something created during last 10 days
+            i = 0;
+            for i=0:9
+                str = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
+                if exist([str '/cfg'], 'dir')
+                    content = dir([str '/cfg']);
+                    if ~isempty(content)
+                        break;
+                    end;
+                end;
+            end;
+
+            if i == 10
+                warning('No configuration file created during the last 10 days');
+                res = -1;
+            else
+                max = 1;
+                for i=1:length(content)
+                    if strcmp(content(i).name(end-3:end), '.mat') ...
+                            && content(i).datenum >= content(max).datenum
+                        max = i;
+                    end;
+                end;
+                res = load([str '/cfg/' content(max).name]);
+            end;
+        end
+        
+        %% Load preferences
+        function res = loadPrefs()
+            if ~ispref('AntArray')
+                res = -1;
+            else
+                res = getpref('AntArray');
+            end;
+        end
     end
     methods (Static, Access = 'public')
         %% Get field value at a given position
@@ -2610,6 +2688,13 @@ classdef AntArray
                     end;
                 end;
             end;
-        end;
+        end
+        
+        %% Function to clear preferences
+        function clearPrefs()
+           if ispref('AntArray')
+               rmpref('AntArray');
+           end;
+        end
     end
 end
