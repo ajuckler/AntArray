@@ -6,7 +6,6 @@ classdef AntArray
     properties (Constant, Access='public')
         c0 = 299792458; % Speed of light in free space
         Z0 = 119.9169832*pi; % Impedance of free space
-        opt_pts = 51;	% Number of discretization steps in one dimension
         min_E = -1.3;   % Minimal electric field for reception [dB V/m]
     end
     properties (GetAccess='public', SetAccess='private')
@@ -15,7 +14,6 @@ classdef AntArray
         norm_freq;      % frequency used for normalization
         el_len;         % dipoles' length
         spacing;        % inter-element spacing
-        opt_win;        % side length and depth of optimization window
         name;           % name for the plot files
         max_XY;         % max dB scale value for XY-patterns
         max_YZ;         % max dB scale value for YZ-patterns
@@ -71,10 +69,6 @@ classdef AntArray
                 error('The matrix containing the excitations must be square');
             end;
             
-            if mod(obj.opt_pts, 2) == 0
-                error('Invalid number of discretization steps (should be odd)');
-            end;
-            
             if nargin < 2
                 f = 60500;
                 l = 2.1826855509101;
@@ -98,7 +92,6 @@ classdef AntArray
             
             obj.name = '';
             obj.comments = '';
-            obj.opt_win = [0,0];   
             obj.max_XY = 0;
             obj.max_YZ = 0;
             obj.min_XY = 0;
@@ -113,22 +106,15 @@ classdef AntArray
             obj.dir(M~=0) = 1;
             obj.dir_str{1} = 'Unknown';
             obj.norm_freq = obj.freq;
+            
+            obj.sav_cfg(1);
         end
         
         %% Disable waitbars
         function obj = disableWaitbars(obj)
             obj.dispwait = 0;
+            obj.sav_cfg();
         end;
-        
-        %% Function to set the optimization window dimension
-        function obj = setOptWin(obj, side, dist)
-           % INPUT
-           %    obj:    AntArray object
-           %    side:   side length of the optimization window [mm]
-           %    dist:   distance to the array plane [mm]
-           
-           obj.opt_win = [side/1000, dist/1000];
-        end
         
         %% Function to set the output file name
         function obj = setName(obj, name)
@@ -140,6 +126,7 @@ classdef AntArray
                 name = ['_' name];
             end;
             obj.name = name;
+            obj.sav_cfg();
         end
         
         %% Function to set the maximal scale value
@@ -158,6 +145,8 @@ classdef AntArray
             else
                 error('Unhandled pattern plane');
             end;
+            
+            obj.sav_cfg();
         end
         
         %% Function to set the minimal scale value
@@ -176,6 +165,8 @@ classdef AntArray
             else
                 error('Unhandled pattern plane');
             end;
+            
+            obj.sav_cfg();
         end
         
         %% Function to set the aperture angle used for weighting
@@ -194,6 +185,8 @@ classdef AntArray
             end;
 
             obj.weight_ang = val;
+            
+            obj.sav_cfg();
         end
         
         %% Function to set comments to be printed on the elements' plot
@@ -211,6 +204,8 @@ classdef AntArray
             %   n_freq:       Frequency used at normalization [MHz]
             obj.norm_freq = n_freq*10^6;
             obj.normalized = 0;
+            
+            obj.sav_cfg();
         end;
         
         %% Function to set the power used for normalization
@@ -220,6 +215,8 @@ classdef AntArray
             %   n_pwr:      Power used for normalization [W]
             obj.pwr = n_pwr;
             obj.normalized = 0;
+            
+            obj.sav_cfg();
         end;
         
         %% Function to add focused antenna pattern to the array
@@ -398,6 +395,8 @@ classdef AntArray
             obj.dir_str = cell(1,1);
             obj.dir_str{1} = 'Unknown';
             obj.normalized = 0;
+            
+            obj.sav_cfg();
         end
         
         %% Function to compute and plot the field pattern
@@ -1192,8 +1191,9 @@ classdef AntArray
 
             close all
         end
+        
     end
-    methods (Access='public')
+    methods (Access='private')
         %% Function to compute and plot the fields for the YZ-mode
         function ptrn = E_YZ(obj, d, L, ss)
             % INPUT
@@ -2401,6 +2401,47 @@ classdef AntArray
                 obj.M = obj.M(:,:)./fact;
                 obj.normalized = 1;
             end;
+        end
+        
+        %% Function to save current configuration
+        function sav_cfg(obj, init)
+            if nargin < 2 || isempty(init)
+                init = 0;
+            else
+                init = init > 0;
+            end;
+            
+            cfg = cell(16,2);
+            names = {'freq', 'norm_freq', 'el_len', 'min_E', 'spacing', ...
+                    'min_XY', 'max_XY', 'min_YZ', 'max_YZ', 'min_E_str', ...
+                    'max_E_str', 'pwr', 'weight_ang', 'normalized', ...
+                    'dispwait', 'plotres'};
+            vals = {obj.freq, obj.norm_freq, obj.el_len, AntArray.min_E, ...
+                    obj.spacing, obj.min_XY, obj.max_XY, obj.min_YZ, ...
+                    obj.max_YZ, obj.min_E_strength, obj.max_E_strength, ...
+                    obj.pwr, obj.weight_ang, obj.normalized, ...
+                    obj.dispwait, obj.plotres};
+            cfg(:, 1) = names;
+            cfg(:, 2) = vals;
+            
+            persistent sav_loc
+            persistent sav_name
+            if init
+                sav_loc = [datestr(now, 'yyyymmdd') '/cfg'];
+                sav_name = datestr(now, 'HHMMSS');
+            end;
+            if ~isempty(obj.name) && ~strcmp(obj.name, sav_name)
+                delete([sav_loc '/' sav_name '.cfg']);
+                sav_name = obj.name(2:end);
+            end;
+            
+            if ~exist(sav_loc, 'dir')
+                mkdir(sav_loc);
+            end;
+            
+            structarr = cell2struct(cfg(:,2), cfg(:,1), 1);
+            
+            save([sav_loc '/' sav_name '.cfg'], 'structarr', '-MAT', '-v7.3');
         end
         
     end
