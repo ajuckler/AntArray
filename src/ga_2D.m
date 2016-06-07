@@ -73,7 +73,10 @@ mut_prob = mut_prob_df; % mutation probability
 
 max_iter = 60;      % max number of iterations
 mut_iter = round(.2*max_iter); % max number of iterations before
-                                %   change in mutation probability
+                               %   change in mutation probability
+                                
+freq = 60500;
+elsp = 0.84;
 
 if mod(pop_sz, trn_sz) ~= 0
     pop_sz = pop_sz + mod(pop_sz, trn_sz);
@@ -115,10 +118,12 @@ try
                     elseif quant
                         start_pop{i} = AntArray(...
                                        AntArray.quantize(...
-                                       round(abs(start_pop{i}.M)), 2, 1));
+                                       round(abs(start_pop{i}.M)), 2, 1), ...
+                                       freq, [], elsp);
                     else
                         start_pop{i} = AntArray(...
-                                       round(abs(start_pop{i}.M)));
+                                       round(abs(start_pop{i}.M)), ...
+                                       freq, [], elsp);
                     end;
                 end;
             elseif isa(start_pop, 'numeric')
@@ -133,7 +138,8 @@ try
                 elseif quant
                     tmp = AntArray(...
                                    AntArray.quantize(...
-                                   round(abs(start_pop.M)), 2, 1));
+                                   round(abs(start_pop.M)), 2, 1), ...
+                                   freq, [], elsp);
                     start_pop = cell(1,1);
                     start_pop{1} = tmp;
                 else
@@ -154,7 +160,7 @@ try
 
         % Continue initial population generation
         if isempty(chrom_sz)
-            temp = AntArray();
+            temp = AntArray([], freq, [], elsp);
             chrom_sz = size(temp.M, 1);
             clearvars temp;
         end;
@@ -171,7 +177,7 @@ try
         end;
         for i=end_index+1:pop_sz
             chrom = randi([0 1], 1, chrom_sz*chrom_sz);
-            pop{i} = AntArray(chrom2mat(chrom, quant));
+            pop{i} = AntArray(chrom2mat(chrom, quant), freq, [], elsp);
             dial.terminate();
         end;
 
@@ -277,7 +283,7 @@ try
         fold_name = [dir num2str(iter) '/arrangement_'];
         for i=1:pop_sz
             tmp = dlmread([fold_name num2str(i) '.dat']);
-            pop{i} = AntArray(tmp);
+            pop{i} = AntArray(tmp, freq, [], elsp);
             
             quant_cond = sum(sum(tmp(1:2:end,:)~= tmp(2:2:end,:))) == 0;
             quant_cond = quant_cond && sum(sum(tmp(:,1:2:end) ~= tmp(:,2:2:end))) == 0;
@@ -407,7 +413,8 @@ try
             % Save new pop & evaluate
             % -----------------------
             for j=1:trn_sz
-                inds{j} = AntArray(chrom2mat(chroms{j}, quant));
+                inds{j} = AntArray(chrom2mat(chroms{j}, quant), ...
+                                    freq, [], elsp);
                 vals(j) = fitness(inds{j}, dist, mode);
             end;
             eva_tmp(:, i) = vals;
@@ -464,9 +471,6 @@ try
         end;
     end;
     dial.terminate();
-
-    [optim_val, pos] = max(eva(:));
-    optim_sol = pop{pos};
     
     delete(dial);
     
@@ -488,6 +492,8 @@ if ~exist('fname', 'var')
     warning 'Fitness plot not generated';
     return;
 elseif iter > max_iter
+    [optim_val, pos] = max(eva(:));
+    optim_sol = pop{pos};
     optim_sol = optim_sol.setName(fname);
     optim_sol = optim_sol.setComments(sprintf([...
         'Dist: ' num2str(dist/1000) '\nQuant: ' num2str(quant) ...

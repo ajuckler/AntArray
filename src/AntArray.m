@@ -44,7 +44,7 @@ classdef AntArray
             %   l:      length of dipole element [mm]
             %   s:      inter-element spacing [fraction of wavelength]
             
-            if nargin == 0
+            if nargin == 0 || isempty(M)
                 M = zeros(64);
             elseif isa(M, 'char')
                 if strcmp(M(end-3:end), '.mat')
@@ -656,6 +656,7 @@ classdef AntArray
         
             % Plot
             waitbar(1, progress, 'Generating plots...');
+            fig = figure();
             semilogx(absc, oord, 'LineWidth', 2);
             xlim([absc(1) absc(end)]);
             hold on;
@@ -742,10 +743,10 @@ classdef AntArray
                 'Interpreter', 'latex', 'FontSize', 22);
             ylabel('Field strength [dB\,V/m]', ...
                 'Interpreter', 'latex', 'FontSize', 22);
-            set(gca, 'FontSize', 16);
+            set(get(fig, 'CurrentAxes'), 'FontSize', 16);
             hold off;
 
-            print_plots(gcf, ['E_strength' obj.name]);
+            print_plots(fig, ['E_strength' obj.name]);
 
             delete(progress);
 
@@ -1141,7 +1142,7 @@ classdef AntArray
                 error('No antenna element was initiated');
             end;
             
-            figure(1);
+            fig = figure();
             hold on;
             for i=1:maxval
                 if ~isempty(find(obj.dir,i))
@@ -1186,7 +1187,7 @@ classdef AntArray
             end
 
             savname = ['elements' obj.name];
-            print_plots(gcf, savname);
+            print_plots(fig, savname);
             export_dat(round(abs(obj.M)), savname, 1);
 
             close all
