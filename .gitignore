@@ -6,6 +6,8 @@ run2.m
 *_old.m
 *.asv
 *.lnk
+*.xls*
+*.mat
 E_XY.m
 E_YZ.m
 E_array.m
