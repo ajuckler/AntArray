@@ -74,6 +74,7 @@ mut_prob = mut_prob_df; % mutation probability
 max_iter = 60;      % max number of iterations
 mut_iter = round(.2*max_iter); % max number of iterations before
                                %   change in mutation probability
+off_ratio = .1;     % ratio of max_iter on which convergence will be checked
                                 
 freq = 60500;
 elsp = 0.84;
@@ -205,6 +206,7 @@ try
         dial.setMainString('Initial population evaluated');
 
         iter = 1;
+        off = 0;
         progress_data = zeros(max_iter+1, 2);
         save_state(pop, eva, iter);
         dial.setSubString('Initial data saved');
@@ -252,7 +254,7 @@ try
         % ---------------------
         progress_data = zeros(max_iter+1, 2);
         iter = 1;
-        while exist([dir num2str(iter)], 'dir') && iter < max_iter
+        while exist([dir num2str(iter)], 'dir')
             if ~exist([dir num2str(iter) '/fitness.dat'], 'file')
                 break;
             end;
@@ -302,6 +304,14 @@ try
             chrom_sz = chrom_sz/2;
         end;
         
+        if iter > max_iter
+            off = iter-max_iter;
+            mult = off_ratio*max_iter;
+            off = mult*ceil(round/mult);
+        else
+            off = 0;
+        end;
+        
         dial.setMainString('Old data parsed');
             
     else
@@ -312,7 +322,6 @@ try
     progress_data(iter, :) = [max(eva(:)) sum(sum(eva))/numel(eva)];
 
     condition = 0;
-    off = 0;
     while iter <= max_iter + off
         dial.setMainString(['Working on population ' num2str(iter)...
             ' of ' num2str(max_iter + off) '...']);
@@ -459,14 +468,14 @@ try
         % Add iterations if no good convergence
         % -------------------------------------
         if iter > max_iter + off
-            off_iter = round(.1*max_iter);
+            off_iter = round(off_ratio*max_iter);
             % Test enough identical samples
             last_data = progress_data(iter-off_iter:iter, :);
             last_max = last_data(:, 1);
             if ~isempty(last_max(abs(last_max - last_max(end))>10^-6))
                 off = off + off_iter;
-                cfg(5) = max_iter + off;
-                save_state(cfg, [], iter);
+%                 cfg(5) = max_iter + off;
+%                 save_state(cfg, [], iter);
             end;
         end;
     end;
