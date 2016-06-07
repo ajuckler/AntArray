@@ -1,7 +1,7 @@
 %GEN_SQ_ARRGT generates the double square arrangement with specified
 %dimension
 %
-%   ARR = GEN_SQ_ARRGT(DIM)
+%   ARR = GEN_SQ_ARRGT(DIM, REM)
 %   INPUT:
 %       DIM:    dimension of the array
 %       REM:    (optional) number of lines to remove [default = 0]

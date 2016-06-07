@@ -28,7 +28,7 @@ function arr = gen_tr_arrgt(dim, mode, rem)
     
     rem_els = max(1, ceil(h/3 - rem));
 
-    arr = zeros(32);
+    arr = zeros(dim);
     mask = arr;
     for i=1:h
         x = dim/2 - round((i-1)*tan(pi/6));
