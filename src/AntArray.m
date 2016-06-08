@@ -4,9 +4,9 @@
 
 classdef AntArray
     properties (Constant, Access='public')
-        c0 = 299792458; % Speed of light in free space
+        c0 = 299792458;     % Speed of light in free space
         Z0 = 119.9169832*pi; % Impedance of free space
-        min_E = -1.3;   % Minimal electric field for reception [dB V/m]
+        def_min_E = -1.3;   % Minimal electric field for reception [dB V/m]
     end
     properties (GetAccess='public', SetAccess='private')
         M;              % matrix of elements' excitation
@@ -14,6 +14,7 @@ classdef AntArray
         norm_freq;      % frequency used for normalization
         el_len;         % dipoles' length
         spacing;        % inter-element spacing
+        min_E;          % minimal electric field for reception [dB V/m]
         name;           % name for the plot files
         max_XY;         % max dB scale value for XY-patterns
         max_YZ;         % max dB scale value for YZ-patterns
@@ -37,16 +38,22 @@ classdef AntArray
         function obj = AntArray(M, f, l, s, cfg, prefs)
             % INPUT
             %   M:      square matrix of antenna elements' excitation
-            %           can be path to file
+            %           can be path to file [.dat | .mat]
             %   f:      frequency of operation [MHz]
             %   l:      length of dipole element [mm]
             %   s:      inter-element spacing [fraction of wavelength]
+            %   cfg:    (optional) whether to use last config file [bool]
+            %   prefs:  (optional) whether to use preferences [bool]
             
-            if nargin < 6 || isempty(prefs)
-                prefs = 0;
+            if nargin < 6
+                prefs = [];
+            else
+                prefs = prefs > 0;
             end;
-            if nargin < 5 || isempty(cfg)
-                cfg = 0;
+            if nargin < 5
+                cfg = [];
+            else
+                cfg = cfg > 0;
             end;
             if nargin < 4 || isempty(s)
                 s = 1;
@@ -84,17 +91,13 @@ classdef AntArray
                 error('The matrix containing the excitations must be square');
             end;
             
-            cfg_out = loadCfg();
-            if prefs
-                
-            elseif cfg
-               
-            end
             
+            % Construct with default values
             obj.M = M;
             obj.freq = f*10^6;
             obj.el_len = l/1000;
             obj.spacing = obj.c0/obj.freq*s;
+            obj.min_E = AntArray.def_min_E;
             
             obj.name = '';
             obj.comments = '';
@@ -113,13 +116,56 @@ classdef AntArray
             obj.dire_str{1} = 'Unknown';
             obj.norm_freq = obj.freq;
             
-            obj.sav_cfg(1);
+            % Adapt with cfg and prefs
+            prefs_out = AntArray.loadPrefs();
+            if isempty(prefs) && isempty(cfg) && nargin > 0
+                % Show GUI
+                error 'No GUI implemented yet';
+            elseif cfg
+                cfg_out = AntArray.loadCfg();
+                cfg_fl = fieldnames(cfg_out);
+                if prefs && prefs_out ~= -1
+                    prefs_fl = fieldnames(prefs_out);
+                    for i=1:length(prefs_fl)
+                        for j=1:length(cfg_fl)
+                            if strcmp(prefs_fl{i}, cfg_fl{j})
+                                cfg_out.(cfg_fl{j}) = prefs_out.(prefs_fl{i});
+                            end;
+                        end;
+                    end;
+                end;
+                
+                ant_fl = fieldnames(AntArray);
+                for i=1:length(ant_fl)
+                    for j=1:length(cfg_fl)
+                        if strcmp(ant_fl{i}, cfg_fl{j})
+                            obj.(ant_fl{i}) = cfg_out.(cfg_fl{j});
+                        end;
+                    end;
+                end;
+            elseif prefs
+                if prefs_out == -1
+                    warning 'No preference previously defined';
+                else
+                    prefs_fl = fieldnames(prefs_out);
+                    ant_fl = fieldnames(AntArray);
+                    for i=1:length(ant_fl)
+                        for j=1:length(prefs_fl)
+                            if strcmp(ant_fl{i}, prefs_fl{j})
+                                obj.(ant_fl{i}) = prefs_out.(prefs_fl{j});
+                            end;
+                        end;
+                    end;
+                end;
+            end;
+            
+            obj.saveCfg(1);
         end
         
         %% Disable waitbars
         function obj = disableWaitbars(obj)
             obj.dispwait = 0;
-            obj.sav_cfg();
+            obj.saveCfg();
         end;
         
         %% Function to set the output file name
@@ -132,7 +178,7 @@ classdef AntArray
                 name = ['_' name];
             end;
             obj.name = name;
-            obj.sav_cfg();
+            obj.saveCfg();
         end
         
         %% Function to set the maximal scale value
@@ -152,7 +198,7 @@ classdef AntArray
                 error('Unhandled pattern plane');
             end;
             
-            obj.sav_cfg();
+            obj.saveCfg();
         end
         
         %% Function to set the minimal scale value
@@ -172,7 +218,7 @@ classdef AntArray
                 error('Unhandled pattern plane');
             end;
             
-            obj.sav_cfg();
+            obj.saveCfg();
         end
         
         %% Function to set the aperture angle used for weighting
@@ -192,7 +238,7 @@ classdef AntArray
 
             obj.weight_ang = val;
             
-            obj.sav_cfg();
+            obj.saveCfg();
         end
         
         %% Function to set comments to be printed on the elements' plot
@@ -211,8 +257,8 @@ classdef AntArray
             obj.norm_freq = n_freq*10^6;
             obj.normalized = 0;
             
-            obj.sav_cfg();
-        end;
+            obj.saveCfg();
+        end
         
         %% Function to set the power used for normalization
         function obj = setNormPwr(obj, n_pwr)
@@ -222,8 +268,8 @@ classdef AntArray
             obj.pwr = n_pwr;
             obj.normalized = 0;
             
-            obj.sav_cfg();
-        end;
+            obj.saveCfg();
+        end
         
         %% Function to add focused antenna pattern to the array
         function obj = adaptArray(obj, M, x, y, z)
@@ -402,7 +448,7 @@ classdef AntArray
             obj.dire_str{1} = 'Unknown';
             obj.normalized = 0;
             
-            obj.sav_cfg();
+            obj.saveCfg();
         end
         
         %% Function to compute and plot the field pattern
@@ -1224,12 +1270,8 @@ classdef AntArray
             end;
 
             propfield = eval(prop);
-            if strcmpi(prop, 'min_E')
-                setpref('AntArray', prop, AntArray.propfield);
-            else
-                setpref('AntArray', prop, obj.propfield);
-            end;
-
+            setpref('AntArray', prop, obj.propfield);
+            
         end
         
     end
@@ -1432,7 +1474,7 @@ classdef AntArray
             dim = round(L/ss)+1;
             ext_dim = dim+1;
             plotdata = ones(ext_dim); % Larger to be able to plot evth
-            plotdata = plotdata.*(AntArray.min_E-40); % 40dB below threshold
+            plotdata = plotdata.*(obj.min_E-40); % 40dB below threshold
                         
             % Search for symmetry
             % -------------------
@@ -1463,7 +1505,7 @@ classdef AntArray
                         val = 20*log10(sqrt(sum(abs(E(:)).^2)));
                         slice(j) = val;
                         
-                        if val < AntArray.min_E
+                        if val < obj.min_E
                             counter = counter + 1;
                             if counter >= counter_th
                                 break;
@@ -1480,7 +1522,7 @@ classdef AntArray
                         val = 20*log10(sqrt(sum(abs(E(:)).^2)));
                         slice(j) = val;
                         
-                        if val < AntArray.min_E
+                        if val < obj.min_E
                             counter = counter + 1;
                             if counter >= counter_th
                                 break;
@@ -1496,7 +1538,7 @@ classdef AntArray
                         val = 20*log10(sqrt(sum(abs(E(:)).^2)));
                         slice(j) = val;
                         
-                        if val < AntArray.min_E
+                        if val < obj.min_E
                             counter = counter + 1;
                             if counter >= counter_th
                                 break;
@@ -2451,16 +2493,14 @@ classdef AntArray
                 init = init > 0;
             end;
             
-            cfg = cell(16,2);
+            cfg = cell(15,2);
             names = {'freq', 'norm_freq', 'el_len', 'min_E', 'spacing', ...
                     'min_XY', 'max_XY', 'min_YZ', 'max_YZ', 'min_E_str', ...
-                    'max_E_str', 'pwr', 'weight_ang', 'normalized', ...
-                    'dispwait', 'plotres'};
-            vals = {obj.freq, obj.norm_freq, obj.el_len, AntArray.min_E, ...
+                    'max_E_str', 'pwr', 'weight_ang', 'dispwait', 'plotres'};
+            vals = {obj.freq, obj.norm_freq, obj.el_len, obj.min_E, ...
                     obj.spacing, obj.min_XY, obj.max_XY, obj.min_YZ, ...
                     obj.max_YZ, obj.min_E_strength, obj.max_E_strength, ...
-                    obj.pwr, obj.weight_ang, obj.normalized, ...
-                    obj.dispwait, obj.plotres};
+                    obj.pwr, obj.weight_ang, obj.dispwait, obj.plotres};
             cfg(:, 1) = names;
             cfg(:, 2) = vals;
             
@@ -2565,12 +2605,20 @@ classdef AntArray
         function res = loadCfg()
             % Find if something created during last 10 days
             i = 0;
-            for i=0:9
+            for i=0:10
                 str = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
                 if exist([str '/cfg'], 'dir')
                     content = dir([str '/cfg']);
-                    if ~isempty(content)
-                        break;
+                    if length(content) > 1
+                        found = 0;
+                        for j=2:length(content)
+                            found = found ...
+                                || (length(content(j).name) > 4 ...
+                                && strcmp(content(j).name(end-3:end), '.cfg'));
+                        end;
+                        if found
+                            break;
+                        end;
                     end;
                 end;
             end;
@@ -2581,12 +2629,17 @@ classdef AntArray
             else
                 max = 1;
                 for i=1:length(content)
-                    if strcmp(content(i).name(end-3:end), '.mat') ...
+                    if length(content(i).name) > 4 ...
+                            && strcmp(content(i).name(end-3:end), '.cfg') ...
                             && content(i).datenum >= content(max).datenum
                         max = i;
                     end;
                 end;
-                res = load([str '/cfg/' content(max).name]);
+                res = load([str '/cfg/' content(max).name], '-mat');
+                fl = fieldnames(res);
+                if length(fl) == 1
+                    res = res.(fl{1});
+                end;
             end;
         end
         
@@ -2598,6 +2651,7 @@ classdef AntArray
                 res = getpref('AntArray');
             end;
         end
+        
     end
     methods (Static, Access = 'public')
         %% Get field value at a given position
