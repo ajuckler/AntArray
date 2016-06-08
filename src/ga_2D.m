@@ -307,7 +307,7 @@ try
         if iter > max_iter
             off = iter-max_iter;
             mult = off_ratio*max_iter;
-            off = mult*ceil(round/mult);
+            off = mult*ceil(off/mult);
         else
             off = 0;
         end;

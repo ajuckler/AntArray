@@ -1,6 +1,62 @@
+%AntArray  Class for handling custom array of dipole antennas
 %
-% Copyright 2015-2016, Antoine JUCKLER
+%This class permits to create custom arrays of dipole antennas, all placed
+%along the Z-direction on a grid with constant spacing centred at the
+%origin and located in the YZ-plane.
+%Elements of the array can be tuned as to focus the beam on a certain point
+%of space, and their amplitude can be further tuned as to realise a
+%specific input power over the entire array.
+%Several functions are provided to compute the electric field distribution
+%on different cut planes or along a line parallel to the X-axis.
 %
+%AntArray Properties
+%   M               matrix containing element's excitations
+%   freq            frequency of operation [Hz]
+%   norm_freq       frequency used for power normalization [Hz]
+%   el_len          dipole's length
+%   spacing         inter-elements spacing
+%   name            name for the figures
+%   min_XY          min dB scale value for XY-patterns
+%   max_XY          max dB scale value for XY-patterns
+%   min_YZ          min dB scale value for YZ-patterns
+%   max_YZ          max dB scale value for YZ-patterns
+%   min_E_strength  min dB scale value for E-strength patterns
+%   max_E_strength  max dB scale value for E-strength patterns
+%   dire            matrix of element's groupings
+%   dire_str        cell array of element's groupings
+%   comments        comment string, will be printed on elements' plot
+%   pwr             input power [W]
+%   weight_ang      weight angle [rad]
+%   normalized      has the input power been normalized (bool)
+%   plotres         save the resulting plots (bool)
+%   dispwait        display the waitbars (bool)
+%
+%AntArray Methods
+%   AntArray        constructor
+%   setName         set the name property
+%   setMin          set the min value for XY, YZ or E-strength plots
+%   setMax          set the max value for XY, YZ or E-strength plots
+%   setWeightAngle  set the weight angle
+%   setComments     set the comments
+%   setNormFreq     set the frequency used at normalization
+%   setNormPwr      set the input power
+%   waitbars        turn waitbars on/off
+%   adaptArray      add elements to the array, focused at a specific point
+%   adaptAmp        adapt elements' amplitude according to given profile
+%   rstArray        clear the elements' array
+%   genPattern      generate electric field distribution along a plane
+%   E_strength      generate the electric field strength on a line
+%   weight          compute the weight
+%   plotWeight      plot the weight pattern
+%   directivity     compute the directivity
+%   directivity_alt compute the directivity (alternative function)
+%   plotAntArray    plot the elements' pattern
+%   getVal          [static] get field value at given position
+%   quantize        [static] quantize a matrix
+%
+%Use the DOC command for detailed explanations
+
+% Copyright 2015-2016, Antoine JUCKLER. All rights reserved
 
 classdef AntArray
     properties (Constant, Access='public')
@@ -10,39 +66,45 @@ classdef AntArray
         min_E = -1.3;   % Minimal electric field for reception [dB V/m]
     end
     properties (GetAccess='public', SetAccess='private')
-        M;              % matrix of elements' excitation
-        freq;           % frequency of operation
-        norm_freq;      % frequency used for normalization
-        el_len;         % dipoles' length
-        spacing;        % inter-element spacing
+        M;              % matrix containing element's excitations
+        freq;           % frequency of operation [Hz]
+        norm_freq;      % frequency used for power normalization [Hz]
+        el_len;         % dipole's length
+        spacing;        % inter-elements spacing
         opt_win;        % side length and depth of optimization window
-        name;           % name for the plot files
-        max_XY;         % max dB scale value for XY-patterns
-        max_YZ;         % max dB scale value for YZ-patterns
+        name;           % name used for the figures
         min_XY;         % min dB scale value for XY-patterns
+        max_XY;         % max dB scale value for XY-patterns
         min_YZ;         % min dB scale value for YZ-patterns
-        max_E_strength; % max dB scale value for E-strength plot
-        min_E_strength; % min dB scale value for E-strength plot
-        dir;            % matrix of element's groups
-        dir_str;        % cell array of element's groups
-        comments;       % string to be printed on elements' plot
-        plotres = 1;
-        dispwait = 1;
-        
-        normalized;     % Has the array been normalized?
-        pwr;            % Input power [W]
-        
-        weight_ang;     % Aperture angle for weighting [rad]
+        max_YZ;         % max dB scale value for YZ-patterns
+        min_E_strength; % min dB scale value for E-strength patterns
+        max_E_strength; % max dB scale value for E-strength patterns
+        dir;            % matrix of element's groupings
+        dir_str;        % cell array of element's groupings
+        comments;       % comment string, will be printed on elements' plot
+        pwr;            % input power [W]
+        weight_ang      % weight angle [rad]
+        normalized      % has the input power been normalized (bool)
+        plotres = 1     % save the resulting plots (bool)
+        dispwait = 1    % display the waitbars (bool)
     end
     methods
         %% Constructor
         function obj = AntArray(M, f, l, s)
+            %ANTARRAY constructor
+            %
+            % obj = ANTARRAY(M, F, L, S)
+            % obj = ANTARRAY(path, F, L, S)
+            %
             % INPUT
             %   M:      square matrix of antenna elements' excitation
-            %           can be path to file
-            %   f:      frequency of operation [MHz]
-            %   l:      length of dipole element [mm]
-            %   s:      inter-element spacing [fraction of wavelength]
+            %   path:   path to matrix file
+            %   F:      frequency of operation [MHz]
+            %   L:      length of dipole element [mm]
+            %   S:      inter-element spacing [fraction of wavelength]
+            % OUTPUT
+            %   obj:    ANTARRAY object
+            %
             
             if nargin == 0 || isempty(M)
                 M = zeros(64);
@@ -114,12 +176,7 @@ classdef AntArray
             obj.dir_str{1} = 'Unknown';
             obj.norm_freq = obj.freq;
         end
-        
-        %% Disable waitbars
-        function obj = disableWaitbars(obj)
-            obj.dispwait = 0;
-        end;
-        
+               
         %% Function to set the optimization window dimension
         function obj = setOptWin(obj, side, dist)
            % INPUT
@@ -132,9 +189,15 @@ classdef AntArray
         
         %% Function to set the output file name
         function obj = setName(obj, name)
+            %SETNAME set the name for file saving
+            %
+            % obj = SETNAME(obj, name)
+            %
             % INPUT
             %   obj:    AntArray object
             %   name:   desired output file name
+            % OUTPUT
+            %   obj:    AntArray object
             
             if name(1) ~= '_'
                 name = ['_' name];
@@ -144,10 +207,20 @@ classdef AntArray
         
         %% Function to set the maximal scale value
         function obj = setMax(obj, pattern, val)
+            %SETMAX set the max value for plots
+            %
+            % obj = SETMAX(obj, patrn, val)
+            %   possible patrn values:
+            %       XY  for XY-plane
+            %       YZ  for YZ-plane
+            %       E   for the E-strength
+            %
             % INPUT
-            %   obj:        AntArray object
-            %   pattern:    name of the plane where the value should apply
-            %   val:        maximal value on the dB-scale
+            %   obj:    AntArray object
+            %   patrn:  name of the plane where the value should apply
+            %   val:    maximal value [dB]
+            % OUTPUT
+            %   obj:    ANTARRAY object
             
             if strcmp(pattern, 'XY')
                 obj.max_XY = val;
@@ -162,10 +235,20 @@ classdef AntArray
         
         %% Function to set the minimal scale value
         function obj = setMin(obj, pattern, val)
+            %SETMIN set the min value for plots
+            %
+            % obj = SETMIN(obj, patrn, val)
+            %   possible patrn values:
+            %       XY  for XY-plane
+            %       YZ  for YZ-plane
+            %       E   for the E-strength
+            %
             % INPUT
-            %   obj:        AntArray object
-            %   pattern:    name of the plane where the value should apply
-            %   val:        minimal value on the dB-scale
+            %   obj:    AntArray object
+            %   patrn:  name of the plane where the value should apply
+            %   val:    minimal value [dB]
+            % OUTPUT
+            %   obj:    AntArray object
             
             if strcmp(pattern, 'XY')
                 obj.min_XY = val;
@@ -211,7 +294,7 @@ classdef AntArray
             %   n_freq:       Frequency used at normalization [MHz]
             obj.norm_freq = n_freq*10^6;
             obj.normalized = 0;
-        end;
+        end
         
         %% Function to set the power used for normalization
         function obj = setNormPwr(obj, n_pwr)
@@ -220,7 +303,17 @@ classdef AntArray
             %   n_pwr:      Power used for normalization [W]
             obj.pwr = n_pwr;
             obj.normalized = 0;
-        end;
+        end
+        
+        %% Turn waitbars on/off
+        function obj = waitbars(obj, status)
+            if nargin < 2 || isempty(status)
+                status = 1;
+            else
+                status = status > 0;
+            end;
+            obj.dispwait = status;
+        end
         
         %% Function to add focused antenna pattern to the array
         function obj = adaptArray(obj, M, x, y, z)
@@ -1058,7 +1151,7 @@ classdef AntArray
         end
         
         %% Function to compute the directivity
-        function obj = directivity_sph(obj)
+        function obj = directivity(obj)
             r = 50000;
             fun = @(theta, phi) ...
                 obj.dir_den(r, theta, phi);
@@ -1094,7 +1187,7 @@ classdef AntArray
         end
         
         %% Function to compute the directivity
-        function obj = directivity_sph_alt(obj)
+        function obj = directivity_alt(obj)
             r = 90000;            
             den = obj.inpower()/4/pi/r^2;
             
