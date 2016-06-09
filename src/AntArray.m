@@ -221,6 +221,8 @@ classdef AntArray
             %   val:    maximal value [dB]
             % OUTPUT
             %   obj:    ANTARRAY object
+            %
+            % See also SETMIN GENPATTERN E_STRENGTH
             
             if strcmp(pattern, 'XY')
                 obj.max_XY = val;
@@ -249,6 +251,8 @@ classdef AntArray
             %   val:    minimal value [dB]
             % OUTPUT
             %   obj:    AntArray object
+            %
+            % See also SETMAX GENPATTERN E_STRENGTH
             
             if strcmp(pattern, 'XY')
                 obj.min_XY = val;
@@ -263,9 +267,18 @@ classdef AntArray
         
         %% Function to set the aperture angle used for weighting
         function obj = setWeightAngle(obj, val)
+            %SETWEIGHTANGLE set the weight angle
+            %
+            % obj = SETWEIGHTANGLE(obj, val)
+            %
             % INPUT
-            %   obj:        AntArray object
-            %   val:        Weighting angle [rad]
+            %   obj:    AntArray object
+            %   val:    angle [rad]
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also WEIGHT PLOTWEIGHT
+
             if isempty(val)
                return;
             end;
@@ -280,33 +293,79 @@ classdef AntArray
         end
         
         %% Function to set comments to be printed on the elements' plot
-        function obj = setComments(obj, comments)
+        function obj = setComments(obj, comm)
+            %SETCOMMENTS set the comments string
+            %
+            % The comment string will be printed on the elements' plot
+            %
+            % obj = SETCOMMENTS(obj, comm)
+            %
             % INPUT
-            %   obj:        AntArray object
-            %   comments:   Comments to be displayed on the plot
-            obj.comments = comments;
+            %   obj:    AntArray object
+            %   comm:   comments to be displayed
+            % OUTPUT
+            %   obj:    AntArray object
+            % 
+            % See also PLOTANTARRAY
+            
+            obj.comments = comm;
         end
         
         %% Function to set the frequency used for normalization
         function obj = setNormFreq(obj, n_freq)
+            %SETNORMFREQ set the frequency used at normalization
+            %
+            % This frequency will be used for computations during
+            % normalization of the input power to the specified level.
+            %
+            % obj = SETNORMFREQ(obj, n_freq)
+            %
             % INPUT
-            %   obj:        AntArray object
-            %   n_freq:       Frequency used at normalization [MHz]
+            %   obj:    AntArray object
+            %   n_freq: frequency used at normalization [MHz]
+            % OUTPUT
+            %   obj:    AntArray object
+            % 
+            % See also SETNORMPWR
+
             obj.norm_freq = n_freq*10^6;
             obj.normalized = 0;
         end
         
         %% Function to set the power used for normalization
         function obj = setNormPwr(obj, n_pwr)
+            %SETNORMPWR set the input power for normalization
+            %
+            % Before generating an electric field distribution, the
+            % amplitude of the antenna elements will be scaled as to
+            % correspond to the specified normalization power.
+            %
+            % obj = SETNORMPWR(obj, n_pwr)
+            %
             % INPUT
-            %   obj:        AntArray object
-            %   n_pwr:      Power used for normalization [W]
+            %   obj:    AntArray object
+            %   n_pwr:  desired input power [W]
+            % OUTPUT
+            %   obj:    AntArray object
+            % 
+            % See also SETNORMFREQ
+            
             obj.pwr = n_pwr;
             obj.normalized = 0;
         end
         
         %% Turn waitbars on/off
         function obj = waitbars(obj, status)
+            %WAITBARS turn waitbars on or off
+            %
+            % obj = WAITBARS(obj, status)
+            %
+            % INPUT
+            %   obj:    AntArray object
+            %   status: (optional) ON (1) or OFF (0) [default=1]
+            % OUTPUT
+            %   obj:    AntArray object
+
             if nargin < 2 || isempty(status)
                 status = 1;
             else
@@ -317,16 +376,21 @@ classdef AntArray
         
         %% Function to add focused antenna pattern to the array
         function obj = adaptArray(obj, M, x, y, z)
-            % Adapt the excitations of the input matrix components to focus
-            % the beam at the given location.
-            % If the optimization window of the AntArray object was
-            % previously defined, the Levenberg-Marquardt algorithm will be
-            % used to optimize the beam focussing
+            %ADAPTARRAY add elements to the antenna array
+            %
+            % The elements' excitation will be adapted as to focus to a
+            % specific point of space.
+            %
+            % obj = ADAPTARRAY(obj, M, x, y, z)
             %
             % INPUT
             %   obj:    AntArray object
             %   M:      matrix of elements that need to be steered
             %   x,y,z:  desired focus point [mm]
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also RSTARRAY ADAPTAMP
             
             if nargin < 3
                 x = 100000;
@@ -408,18 +472,37 @@ classdef AntArray
         
         %% Function to adapt element amplitude according to a profile
         function obj = adaptAmp(obj, norm_x, amps, els, mode)
-        	% Adapt the amplitude of selected antenna elements according to
-        	% the inputted profile
+            %ADAPTAMP adapt the elements' amplitude
+            %
+            % The elements' amplitude will be adapted according to the
+            % specified profile.
+            % The profile is defined by means of two vectors, the first
+            % corresponding to the normalized positions from the centre of
+            % the array, the latter corresponding to the normalized
+            % amplitude factor.
+            % There are two different modes of operation. The profile can
+            % be applied according to the elements position from the array
+            % centre, or to its effective distance to the centre. With the
+            % first mode, all elements on the edge will have the same
+            % factor applied. With the second mode, the corner elements are
+            % located further from the centre than other edge elements and
+            % will thus have a different factor applied.
+            %
+            % obj = ADAPTAMP(obj, norm_x, amps, els, mode)
             %
             % INPUT
             %   obj:    AntArray object   
-            %   norm_x: Vector of normalized x-positions
-            %   amps:   Vector of corresponding normalized amplitudes
+            %   norm_x: vector of normalized x-positions
+            %   amps:   vector of corresponding normalized amplitudes
             %   els:    (optional) Matrix containing the elements to be
             %           adapted
-            %   mode:   Method to calculate the distance to the array
+            %   mode:   method to calculate the distance to the array
             %           centre: element position (P) or effective distance
             %           (D)
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also ADAPTARRAY RSTARRAY
             
             if nargin < 4 || isempty(els)
                 els = obj.M;
@@ -474,12 +557,20 @@ classdef AntArray
         
         %% Function to reset the antenna array
         function obj = rstArray(obj, M)
-            % Reset the matrix containing the element's excitations, if no
-            % matrix is specified, a 1-element array will be created
+            %RSTARRAY clear the elements' matrix
+            %
+            % obj = RSTARRAY(obj, M)
+            %
+            % If no matrix argument is given, a 1-element array will be
+            % created
             %
             % INPUT
             %   obj:    AntArray object
             %   M:      (optional) replacement matrix
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also ADAPTARRAY ADAPTAMP
             
             if nargin < 2
                 M = 0;
@@ -495,26 +586,52 @@ classdef AntArray
         
         %% Function to compute and plot the field pattern
         function [obj, ptrn] = genPattern(obj, d, L, mode, ss, theta)
-            % Compute and plot the field pattern of the antenna array
-            % Behaviour depends on the "mode" parameter:
+            %GENPATTERN generate electric field distribution
+            %
+            % Compute and plot the electric field pattern of the antenna
+            % array on a plane. The plane can be parallel to the array or
+            % perpendicular to it and passing through the propagation axis.
+            % Before each generation, the amplitude of the antenna elements
+            % will be scaled as to correspond to the specified input power.
+            % The patterns are computed at the frequency given at
+            % contruction of the AntArray object.
+            %
+            % [obj ptrn] = GENPATTERN(obj, d, L, mode, ss, theta)
+            %
+            % The behaviour is determined by the mode parameter, which can
+            % take three different values:
             % If mode = 'YZ':
-            %    Plot the fields on a square surface parallel to the YZ-plane
+            %   Plot the fields on a square surface parallel to the YZ
+            %   plane
             % If mode = 'YZ-MAIN':
-            %    Plot only the main beam in the YZ-plane
+            %   Plot only the main beam in the YZ-plane
             % If mode = 'XY':
-            %    Plot the fields in the XY-plane and the field strength
-            %    along the X-axis
+            %   Plot the fields in the XY-plane
             % If mode = 'THETA':
-            %    Plot the fields in the plane at a given angle from the
-            %    Z-axis
+            %   Plot the fields in the plane at a given angle from the
+            %   Z-axis, through the X-axis
+            %
+            % Moreover, once a pattern has been generated with one of the
+            % previous mode, a black and white pattern can be generated by
+            % using the same command with 'YZ-BW', 'XY-BW', or 'THETA-BW'
+            % as mode parameter instead. The white region in the generated
+            % pattern is the region where the electric field intensity is
+            % greater than the minimum reception level.
+            %   
             %
             % INPUT
-            %    obj:    AntArray object
-            %    d:      Distance to the array [mm]
-            %    L:      Side length of the plot surface [mm]
-            %    mode:   YZ, XY or THETA see above
-            %    ss:     Step size for the plot [mm]
-            %    theta:  [if mode=theta] angle wrt Z-axis [radians]
+            %   obj:    AntArray object
+            %   d:      distance to the array (YZ) or distance from the
+            %           array (XY and THETA) [mm]
+            %   L:      side length of the plot surface [mm]
+            %   mode:   YZ, XY or THETA see above
+            %   ss:     step size for the plot [mm]
+            %   theta:  [if mode=theta] angle wrt Z-axis [rad]
+            % OUTPUT
+            %   obj:    AntArray object
+            %   ptrn:   generated pattern
+            %
+            % See also SET_E_MIN SETNORMPWR ANTARRAY
             
             plot_val = obj.plotres;
             
@@ -615,19 +732,31 @@ classdef AntArray
         end
         
         %% Function to compute the E-field strength along a line
-        function obj = E_strength(obj, L, y, z, samples)
-            % Compute the electric field of the array along a line
-            % starting at the array plane
+        function obj = E_strength(obj, L, y, z, smp)
+            %E_STRENGTH compute the electric field along a line
+            %
+            % The electric field intensity is computed along a line
+            % parallel to the X-axis.
+            % Before each generation, the amplitude of the antenna elements
+            % will be scaled as to correspond to the specified input power.
+            % The fields are computed at the frequency given at
+            % contruction of the AntArray object.
+            %
+            % obj = E_STRENGTH(obj, L, y, z, smp)
             %
             % INPUT
             %   obj:    AntArray object
-            %   L:      Maximal distance to the array plane [mm]
+            %   L:      maximal distance to the array plane [mm]
             %   y:      (optional) Y-position of the line
             %   z:      (optional) Z-position of the line
-            %   samples:(optional) nb of samples [default 100]
+            %   smp:    (optional) number of samples [default 100]
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also SETNORMPWR ANTARRAY
             
             if nargin < 5
-                samples = 100;
+                smp = 100;
             end;
             if nargin < 4 || isempty(z)
                 z = 0;
@@ -666,17 +795,17 @@ classdef AntArray
                 waitbar(0);
             end;
 
-            absc = logspace(2, ceil(log10(L)), samples);
+            absc = logspace(2, ceil(log10(L)), smp);
             oord = zeros(1, length(absc));
             
             % Partitions for parallel computing
             iterations = 1;
-            s_samples = samples;
+            s_samples = smp;
             adapted_samples = 0;
-            if samples > 50
-                divs = factor2(round(samples));
+            if smp > 50
+                divs = factor2(round(smp));
                 if length(divs) <= 2
-                    divs = factor2(round(samples+1));
+                    divs = factor2(round(smp+1));
                     adapted_samples = 1;
                 end;
                 for i=1:round(length(divs)/2)
@@ -685,9 +814,9 @@ classdef AntArray
                     end;
                 end;
                 if adapted_samples
-                    s_samples = (samples+1)/iterations;
+                    s_samples = (smp+1)/iterations;
                 else
-                    s_samples = samples/iterations;
+                    s_samples = smp/iterations;
                 end;
             end;
             
@@ -706,7 +835,7 @@ classdef AntArray
                         [E(1), E(2), E(3)] = E_array(obj, cut_absc(i)/1000, y, z);
                         cut_oord(i) = 20*log10(sqrt(sum(abs(E(:)).^2)));
 
-                        waitbar(i/samples);
+                        waitbar(i/smp);
                         
                         if getappdata(progress, 'canceling')
                             close all;
@@ -849,13 +978,27 @@ classdef AntArray
         
         %% Weighting function
         function w = weight(obj, mode, d)
-            % Get the weight of the realized pattern
+            %WEIGHT compute the weight of the realized pattern
+            %
+            % The weight consists of the sum of all cells with an electric
+            % field intensity above the minimal level, that are located
+            % inside the weight angle.
+            %
+            % Patterns must have been generated with the GENPATTERN
+            % function before computing their weight.
+            %
+            % w = WEIGHT(obj, mode, d)
+            %
             %
             % INPUT
             %   obj:    AntArray object
-            %   mode:   XY, YZ or theta, see explanation in genPattern()
+            %   mode:   XY, YZ or THETA, see explanation in GENPATTERN
             %   d:      (optional) distance of the YZ pattern [mm]
             %           OR theta angle [rad]
+            % OUTPUT
+            %   w:      corresponding weight
+            %
+            % See also GENPATTERN SET_MIN_E SETWEIGHTANGLE PLOTWEIGHT
             
             w = 0;
             
@@ -942,13 +1085,17 @@ classdef AntArray
         
         %% Plot weighting function
         function plotWeight(obj, mode, d)
-            % Plot the pattern of realized with the wieghting angle
+            %PLOTWEIGHT plot the pattern realized by the weighting angle
+            %
+            % [ ] =PLOT WEIGHT(obj, mode, d)
             %
             % INPUT
             %   obj:    AntArray object
-            %   mode:   XY, YZ or theta, see explanation in genPattern()
+            %   mode:   XY, YZ or THETA, see explanation in GENPATTERN
             %   d:      (optional) distance of the YZ pattern [mm]
             %           OR theta angle [rad]
+            %
+            % See also GENPATTERN SET_MIN_E SETWEIGHTANGLE WEIGHT
             
             if nargin < 3
                 d = [];
@@ -1152,6 +1299,21 @@ classdef AntArray
         
         %% Function to compute the directivity
         function obj = directivity(obj)
+            %DIRECTIVITY compute and plot the directivity
+            %
+            % This function uses the standard formula for computing the
+            % directivity, which takes more time than the alternative
+            % version
+            %
+            % obj = DIRECTIVITY(obj)
+            %
+            % INPUT
+            %   obj:    AntArray object
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also DIRECTIVITY_ALT
+
             r = 50000;
             fun = @(theta, phi) ...
                 obj.dir_den(r, theta, phi);
@@ -1188,6 +1350,22 @@ classdef AntArray
         
         %% Function to compute the directivity
         function obj = directivity_alt(obj)
+            %DIRECTIVITY_ALT compute and plot the directivity
+            %
+            % This function uses an altenative method to compute
+            % directivity, which requires computation of the input power of
+            % the array. Generally, it is faster than the standard
+            % expression using integrals.
+            %
+            % obj = DIRECTIVITY_ALT(obj)
+            %
+            % INPUT
+            %   obj:    AntArray object
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also DIRECTIVITY SETNORMPWR
+            
             r = 90000;            
             den = obj.inpower()/4/pi/r^2;
             
@@ -1220,11 +1398,26 @@ classdef AntArray
         end
         
         %% Function to show the antenna repartition
-        function plotAntArray(obj, contour)
-            if nargin < 2 || contour < 1
-                contour = 0;
+        function plotAntArray(obj, cont)
+            %PLOTANTARRAY plot the antenna arrangement
+            %
+            % Plot the antenna arrangement of matrix M. Their point of
+            % focus is also indicated, as well as the antenna size. If a
+            % comment was defined, it will be printed too.
+            %
+            % [ ] = PLOTANTARRAY(obj, cont)
+            %
+            % INPUT
+            %   obj:    AntArray object
+            %   cont:   (optional) whether to plot the contour of the
+            %           antenna array [default = 0]
+            %
+            % See also SETCOMMENTS ADAPTARRAY RSTARRAY
+            
+            if nargin < 2 || cont < 1
+                cont = 0;
             else
-                contour = 1;
+                cont = 1;
             end;
             
             colors = {'m', 'c', 'r', 'g', 'b', 'k'};
@@ -1260,7 +1453,7 @@ classdef AntArray
             L = legend('Location', 'eastoutside');
             set(L, 'Interpreter', 'latex', 'FontSize', 20);
             
-            if contour == 1
+            if cont == 1
                 cc = length(obj.M)+1;
                 plot([0 cc], [0 0], '--k', 'Linewidth', 1);
                 plot([0 cc], [cc cc], '--k', 'Linewidth', 1);
@@ -1286,7 +1479,7 @@ classdef AntArray
             close all
         end
     end
-    methods (Access='public')
+    methods (Access='private')
         %% Function to compute and plot the fields for the YZ-mode
         function ptrn = E_YZ(obj, d, L, ss)
             % INPUT
@@ -2576,13 +2769,21 @@ classdef AntArray
     methods (Static, Access = 'public')
         %% Get field value at a given position
         function val = getVal(x, y, file, folder)
+            %GETVAL get the field value at a given position
+            %
             % Extract the value of the electric field at a given position
             % from the given 'dat' file
+            %
+            % val = GETVAL(x, y, file, folder)
             % 
             % INPUT
-            %    x,y:    Coordinates of interest [mm]
-            %    file:   Name of the source file [.dat extension]
+            %    x,y:    coordinates of interest [mm]
+            %    file:   name of the source file [.dat extension]
             %    folder: (optional) Name of the source folder
+            % OUTPUT
+            %   val:    electric field intensity [dB V/m]
+            %
+            % See also GENPATTERN
            
             if nargin < 4
                 date_v = datevec(date);
@@ -2623,11 +2824,21 @@ classdef AntArray
         
         %% Quantize a matrix
         function M = quantize(M, quant, lvl)
+            %QUANTIZE quantize a matrix
+            %
+            % Quantize a matrix, using a smaller matrix. When the number of
+            % active elements inside the smaller matrix is higher than a
+            % given level, all the elements will be turned on. Otherwise
+            % they will all be turned off.
+            %
+            % M = quantize(M, quant, lvl)
+            %            
             % INPUT:
             %   M:      matrix to be quantized
             %   quant:  dimension of quantization
             %   lvl:    quantization level
-            %
+            % OUPUT
+            %   M:      quantized matrix
             
             quant = abs(round(quant));
             if nargin < 3
