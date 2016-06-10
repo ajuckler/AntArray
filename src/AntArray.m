@@ -20,10 +20,10 @@ classdef AntArray
         max_YZ;         % max dB scale value for YZ-patterns
         min_XY;         % min dB scale value for XY-patterns
         min_YZ;         % min dB scale value for YZ-patterns
-        max_E_strength; % max dB scale value for E-strength plot
-        min_E_strength; % min dB scale value for E-strength plot
-        dire;            % matrix of element's groups
-        dire_str;        % cell array of element's groups
+        max_E_str;      % max dB scale value for E-strength plot
+        min_E_str;      % min dB scale value for E-strength plot
+        dire;           % matrix of element's groups
+        dire_str;       % cell array of element's groups
         comments;       % string to be printed on elements' plot
         plotres = 1;
         dispwait = 1;
@@ -42,7 +42,7 @@ classdef AntArray
             %   f:      frequency of operation [MHz]
             %   l:      length of dipole element [mm]
             %   s:      inter-element spacing [fraction of wavelength]
-            %   cfg:    (optional) whether to use last config file [bool]
+            %   cfg:    (optional) config file
             %   prefs:  (optional) whether to use preferences [bool]
             
             if nargin < 6
@@ -52,8 +52,13 @@ classdef AntArray
             end;
             if nargin < 5
                 cfg = [];
-            else
-                cfg = cfg > 0;
+            elseif ~isempty(cfg)
+                if length(cfg) > 4 && ~strcmp(cfg(end-3:end), '.cfg')
+                    cfg = [cfg '.cfg'];
+                end;
+                if ~exist(cfg, 'file')
+                    error 'Config file not found';
+                end;
             end;
             if nargin < 4 || isempty(s)
                 s = 1;
@@ -91,7 +96,6 @@ classdef AntArray
                 error('The matrix containing the excitations must be square');
             end;
             
-            
             % Construct with default values
             obj.M = M;
             obj.freq = f*10^6;
@@ -105,8 +109,8 @@ classdef AntArray
             obj.max_YZ = 0;
             obj.min_XY = 0;
             obj.min_YZ = 0;
-            obj.max_E_strength = 0;
-            obj.min_E_strength = 0;
+            obj.max_E_str = 0;
+            obj.min_E_str = 0;
             obj.normalized = 0;
             obj.pwr = 10*10^-3;
             obj.weight_ang = pi/18; % 10°
@@ -119,10 +123,24 @@ classdef AntArray
             % Adapt with cfg and prefs
             prefs_out = AntArray.loadPrefs();
             if isempty(prefs) && isempty(cfg) && nargin > 0
-                % Show GUI
-                error 'No GUI implemented yet';
-            elseif cfg
-                cfg_out = AntArray.loadCfg();
+                names = AntArray.paramNames();
+                cfgdlg = CfgDialog(names);
+                dft = struct();
+                for i=1:length(names)
+                    dft.(names{i}) = obj.(names{i});
+                end;
+                cfgdlg.setDft(dft);
+                cfgdlg.waitClosing();
+                flval = cfgdlg.getFields();
+                
+                fl = fieldnames(flval);
+                for i=1:length(fl)
+                    if ~isempty(flval.(fl{i}))
+                        obj.(fl{i}) = flval.(fl{i});
+                    end;
+                end;
+            elseif ~isempty(cfg)
+                cfg_out = AntArray.loadCfg(cfg);
                 cfg_fl = fieldnames(cfg_out);
                 if prefs && prefs_out ~= -1
                     prefs_fl = fieldnames(prefs_out);
@@ -193,7 +211,7 @@ classdef AntArray
             elseif strcmp(pattern, 'YZ')
                 obj.max_YZ = val;
             elseif strcmp(pattern, 'E')
-                obj.max_E_strength = val;
+                obj.max_E_str = val;
             else
                 error('Unhandled pattern plane');
             end;
@@ -213,7 +231,7 @@ classdef AntArray
             elseif strcmp(pattern, 'YZ')
                 obj.min_YZ = val;
             elseif strcmp(pattern, 'E')
-                obj.min_E_strength = val;
+                obj.min_E_str = val;
             else
                 error('Unhandled pattern plane');
             end;
@@ -713,13 +731,13 @@ classdef AntArray
             hold on;
             
             view_axis = axis;
-            if obj.max_E_strength ~= 0
-                max_val = obj.max_E_strength-1;
+            if obj.max_E_str ~= 0
+                max_val = obj.max_E_str-1;
             else
                 max_val = max(oord);
             end;
-            if obj.min_E_strength ~= 0
-                min_val = obj.min_E_strength+1;
+            if obj.min_E_str ~= 0
+                min_val = obj.min_E_str+1;
             else
                 min_val = view_axis(3);
             end;
@@ -1254,10 +1272,7 @@ classdef AntArray
                 error 'KEY argument required';
             end;
 
-            keys = {'min_E', 'freq', 'norm_freq', 'el_len', 'spacing', ...
-            'min_XY', 'max_XY', 'min_YZ', 'max_YZ', ...
-            'min_E_strength', 'max_E_strength', 'pwr', 'weightang', ...
-            'plotres', 'dispwait'};
+            keys = paramNames();
             prop = '';
             for i=1:length(keys)
                 if strcmpi(key, keys(i))
@@ -2493,14 +2508,12 @@ classdef AntArray
                 init = init > 0;
             end;
             
-            cfg = cell(15,2);
-            names = {'freq', 'norm_freq', 'el_len', 'min_E', 'spacing', ...
-                    'min_XY', 'max_XY', 'min_YZ', 'max_YZ', 'min_E_str', ...
-                    'max_E_str', 'pwr', 'weight_ang', 'dispwait', 'plotres'};
+            cfg = cell(14,2);
+            names = AntArray.paramNames();
             vals = {obj.freq, obj.norm_freq, obj.el_len, obj.min_E, ...
                     obj.spacing, obj.min_XY, obj.max_XY, obj.min_YZ, ...
-                    obj.max_YZ, obj.min_E_strength, obj.max_E_strength, ...
-                    obj.pwr, obj.weight_ang, obj.dispwait, obj.plotres};
+                    obj.max_YZ, obj.min_E_str, obj.max_E_str, ...
+                    obj.pwr, obj.weight_ang, obj.dispwait};
             cfg(:, 1) = names;
             cfg(:, 2) = vals;
             
@@ -2602,44 +2615,18 @@ classdef AntArray
         end
         
         %% Load cfg file
-        function res = loadCfg()
-            % Find if something created during last 10 days
-            i = 0;
-            for i=0:10
-                str = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
-                if exist([str '/cfg'], 'dir')
-                    content = dir([str '/cfg']);
-                    if length(content) > 1
-                        found = 0;
-                        for j=2:length(content)
-                            found = found ...
-                                || (length(content(j).name) > 4 ...
-                                && strcmp(content(j).name(end-3:end), '.cfg'));
-                        end;
-                        if found
-                            break;
-                        end;
-                    end;
-                end;
+        function res = loadCfg(infile)
+            if length(infile) > 4 && ~strcmp(infile(end-3:end), '.cfg')
+                infile = [infile '.cfg'];
             end;
-
-            if i == 10
-                warning('No configuration file created during the last 10 days');
-                res = -1;
-            else
-                max = 1;
-                for i=1:length(content)
-                    if length(content(i).name) > 4 ...
-                            && strcmp(content(i).name(end-3:end), '.cfg') ...
-                            && content(i).datenum >= content(max).datenum
-                        max = i;
-                    end;
-                end;
-                res = load([str '/cfg/' content(max).name], '-mat');
-                fl = fieldnames(res);
-                if length(fl) == 1
-                    res = res.(fl{1});
-                end;
+            % Find if something created during last 10 days
+            if ~exist(infile, 'file')
+                error 'File not found';
+            end
+            res = load(infile, '-mat');
+            fl = fieldnames(res);
+            if length(fl) == 1
+                res = res.(fl{1});
             end;
         end
         
@@ -2651,6 +2638,13 @@ classdef AntArray
                 res = getpref('AntArray');
             end;
         end
+        
+        %% Parameter names
+        function names = paramNames()
+            names = {'freq', 'norm_freq', 'el_len', 'min_E', 'spacing', ...
+                    'min_XY', 'max_XY', 'min_YZ', 'max_YZ', 'min_E_str', ...
+                    'max_E_str', 'pwr', 'weight_ang', 'dispwait'};
+        end;
         
     end
     methods (Static, Access = 'public')
