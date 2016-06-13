@@ -1264,11 +1264,7 @@ classdef AntArray
         
         %% Function to set preferences
         function setPrefs(obj, key)
-            if nargin < 2
-                % Graphical interface
-                error 'No GUI developed';
-                return
-            elseif isempty(key)
+            if isempty(key)
                 error 'KEY argument required';
             end;
 
