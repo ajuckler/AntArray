@@ -176,14 +176,11 @@ classdef AntArray
                     end;
                 end;
             end;
-            
-            obj.saveCfg(1);
         end
         
         %% Disable waitbars
         function obj = disableWaitbars(obj)
             obj.dispwait = 0;
-            obj.saveCfg();
         end;
         
         %% Function to set the output file name
@@ -196,7 +193,6 @@ classdef AntArray
                 name = ['_' name];
             end;
             obj.name = name;
-            obj.saveCfg();
         end
         
         %% Function to set the maximal scale value
@@ -215,8 +211,6 @@ classdef AntArray
             else
                 error('Unhandled pattern plane');
             end;
-            
-            obj.saveCfg();
         end
         
         %% Function to set the minimal scale value
@@ -235,8 +229,6 @@ classdef AntArray
             else
                 error('Unhandled pattern plane');
             end;
-            
-            obj.saveCfg();
         end
         
         %% Function to set the aperture angle used for weighting
@@ -255,8 +247,6 @@ classdef AntArray
             end;
 
             obj.weight_ang = val;
-            
-            obj.saveCfg();
         end
         
         %% Function to set comments to be printed on the elements' plot
@@ -274,8 +264,6 @@ classdef AntArray
             %   n_freq:       Frequency used at normalization [MHz]
             obj.norm_freq = n_freq*10^6;
             obj.normalized = 0;
-            
-            obj.saveCfg();
         end
         
         %% Function to set the power used for normalization
@@ -285,8 +273,6 @@ classdef AntArray
             %   n_pwr:      Power used for normalization [W]
             obj.pwr = n_pwr;
             obj.normalized = 0;
-            
-            obj.saveCfg();
         end
         
         %% Function to add focused antenna pattern to the array
@@ -465,8 +451,6 @@ classdef AntArray
             obj.dire_str = cell(1,1);
             obj.dire_str{1} = 'Unknown';
             obj.normalized = 0;
-            
-            obj.saveCfg();
         end
         
         %% Function to compute and plot the field pattern
@@ -1283,6 +1267,37 @@ classdef AntArray
             propfield = eval(prop);
             setpref('AntArray', prop, obj.propfield);
             
+        end
+        
+                %% Function to save current configuration to file
+        function saveCfg(obj)
+            cfg = cell(14,2);
+            names = AntArray.paramNames();
+            vals = {obj.freq, obj.norm_freq, obj.el_len, obj.min_E, ...
+                    obj.spacing, obj.min_XY, obj.max_XY, obj.min_YZ, ...
+                    obj.max_YZ, obj.min_E_str, obj.max_E_str, ...
+                    obj.pwr, obj.weight_ang, obj.dispwait};
+            cfg(:, 1) = names;
+            cfg(:, 2) = vals;
+            
+            persistent sav_loc
+            persistent sav_name
+            if isempty(sav_loc)
+                sav_loc = [datestr(now, 'yyyymmdd') '/cfg'];
+                sav_name = datestr(now, 'HHMMSS');
+            end;
+            if ~isempty(obj.name) && ~strcmp(obj.name, sav_name)
+                delete([sav_loc '/' sav_name '.cfg']);
+                sav_name = obj.name(2:end);
+            end;
+            
+            if ~exist(sav_loc, 'dir')
+                mkdir(sav_loc);
+            end;
+            
+            structarr = cell2struct(cfg(:,2), cfg(:,1), 1);
+            
+            save([sav_loc '/' sav_name '.cfg'], 'structarr', '-MAT', '-v7.3');
         end
         
     end
@@ -2494,43 +2509,6 @@ classdef AntArray
                 obj.M = obj.M(:,:)./fact;
                 obj.normalized = 1;
             end;
-        end
-        
-        %% Function to save current configuration to file
-        function saveCfg(obj, init)
-            if nargin < 2 || isempty(init)
-                init = 0;
-            else
-                init = init > 0;
-            end;
-            
-            cfg = cell(14,2);
-            names = AntArray.paramNames();
-            vals = {obj.freq, obj.norm_freq, obj.el_len, obj.min_E, ...
-                    obj.spacing, obj.min_XY, obj.max_XY, obj.min_YZ, ...
-                    obj.max_YZ, obj.min_E_str, obj.max_E_str, ...
-                    obj.pwr, obj.weight_ang, obj.dispwait};
-            cfg(:, 1) = names;
-            cfg(:, 2) = vals;
-            
-            persistent sav_loc
-            persistent sav_name
-            if init
-                sav_loc = [datestr(now, 'yyyymmdd') '/cfg'];
-                sav_name = datestr(now, 'HHMMSS');
-            end;
-            if ~isempty(obj.name) && ~strcmp(obj.name, sav_name)
-                delete([sav_loc '/' sav_name '.cfg']);
-                sav_name = obj.name(2:end);
-            end;
-            
-            if ~exist(sav_loc, 'dir')
-                mkdir(sav_loc);
-            end;
-            
-            structarr = cell2struct(cfg(:,2), cfg(:,1), 1);
-            
-            save([sav_loc '/' sav_name '.cfg'], 'structarr', '-MAT', '-v7.3');
         end
         
     end
