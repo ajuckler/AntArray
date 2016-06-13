@@ -40,6 +40,8 @@
 %   setComments     set the comments
 %   setNormFreq     set the frequency used at normalization
 %   setNormPwr      set the input power
+%   setPref         set a parameter value as a preference
+%   saveCfg         save current configuration to file
 %   waitbars        turn waitbars on/off
 %   adaptArray      add elements to the array, focused at a specific point
 %   adaptAmp        adapt elements' amplitude according to given profile
@@ -53,6 +55,7 @@
 %   plotAntArray    plot the elements' pattern
 %   getVal          [static] get field value at given position
 %   quantize        [static] quantize a matrix
+%   clearPrefs      [static] clear all preferences related to this class
 %
 %Use the DOC command for detailed explanations
 
@@ -1533,7 +1536,17 @@ classdef AntArray
         end
         
         %% Function to set preferences
-        function setPrefs(obj, key)
+        function setPref(obj, key)
+            %SETPREF save current parameter value as preference
+            %
+            % [ ] = SETPREF(obj, key)
+            %
+            % INPUT
+            %   obj:    AntArray object
+            %   cont:   name of the preference
+            %
+            % See also ANTARRAY SAVECFG CLEARPREFS
+            
             if isempty(key)
                 error 'KEY argument required';
             end;
@@ -1555,8 +1568,21 @@ classdef AntArray
             
         end
         
-                %% Function to save current configuration to file
+        %% Function to save current configuration to file
         function saveCfg(obj)
+            %SAVECFG save current configuration to file
+            %
+            % The file will be located in the cfg-subfolder and will be
+            % named as the timestamp when the command is run or with the
+            % array name.
+            %
+            % [ ] = SAVECFG(obj)
+            %
+            % INPUT
+            %   obj:    AntArray object
+            %
+            % See also ANTARRAY SETPREF
+            
             cfg = cell(14,2);
             names = AntArray.paramNames();
             vals = {obj.freq, obj.norm_freq, obj.el_len, obj.min_E, ...
@@ -2904,7 +2930,7 @@ classdef AntArray
             names = {'freq', 'norm_freq', 'el_len', 'min_E', 'spacing', ...
                     'min_XY', 'max_XY', 'min_YZ', 'max_YZ', 'min_E_str', ...
                     'max_E_str', 'pwr', 'weight_ang', 'dispwait'};
-        end;
+        end
         
     end
     methods (Static, Access = 'public')
@@ -3018,9 +3044,15 @@ classdef AntArray
         
         %% Function to clear preferences
         function clearPrefs()
-           if ispref('AntArray')
-               rmpref('AntArray');
-           end;
+            %CLEARPREFS clear all preferences related to this class
+            %
+            % [ ] = CLEARPREFS()
+            %
+            % See also ANTARRAY SETPREF
+            
+            if ispref('AntArray')
+                rmpref('AntArray');
+            end;
         end
     end
 end
