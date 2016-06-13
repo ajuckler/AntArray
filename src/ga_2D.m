@@ -522,7 +522,12 @@ L = legend('Location', 'southeast');
 set(L, 'Interpreter', 'latex', 'FontSize', 20);
 
 xlabel('Iteration', 'Interpreter', 'latex', 'FontSize', 22);
-ylabel('Fitness', 'Interpreter', 'latex', 'FontSize', 22);
+if mode == 0
+    label = 'Fitness [Vm]';
+else
+    label = 'Fitness [$m^2$]';
+end;
+ylabel(label, 'Interpreter', 'latex', 'FontSize', 22);
 set(gca, 'FontSize', 16);
 hold off;
 
