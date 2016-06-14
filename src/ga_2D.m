@@ -105,9 +105,6 @@ try
     if nargin > 1 || isa(dist, 'numeric')
         dial.setSubString('Parsing initial population');
         
-        cfg = [cfg mode quant dist];
-        save_state(cfg);
-        
         % Generate population
         % -------------------
         pop = cell(1, pop_sz);
@@ -120,11 +117,11 @@ try
                         start_pop{i} = AntArray(...
                                        AntArray.quantize(...
                                        round(abs(start_pop{i}.M)), 2, 1), ...
-                                       freq, [], elsp);
+                                       freq, [], elsp, [], 0);
                     else
                         start_pop{i} = AntArray(...
                                        round(abs(start_pop{i}.M)), ...
-                                       freq, [], elsp);
+                                       freq, [], elsp, [], 0);
                     end;
                 end;
             elseif isa(start_pop, 'numeric')
@@ -140,7 +137,7 @@ try
                     tmp = AntArray(...
                                    AntArray.quantize(...
                                    round(abs(start_pop.M)), 2, 1), ...
-                                   freq, [], elsp);
+                                   freq, [], elsp, [], 0);
                     start_pop = cell(1,1);
                     start_pop{1} = tmp;
                 else
@@ -161,7 +158,7 @@ try
 
         % Continue initial population generation
         if isempty(chrom_sz)
-            temp = AntArray([], freq, [], elsp);
+            temp = AntArray([], freq, [], elsp, [], 0);
             chrom_sz = size(temp.M, 1);
             clearvars temp;
         end;
@@ -178,7 +175,8 @@ try
         end;
         for i=end_index+1:pop_sz
             chrom = randi([0 1], 1, chrom_sz*chrom_sz);
-            pop{i} = AntArray(chrom2mat(chrom, quant), freq, [], elsp);
+            pop{i} = AntArray(...
+                    chrom2mat(chrom, quant), freq, [], elsp, [], 0);
             dial.terminate();
         end;
 
@@ -208,7 +206,13 @@ try
         iter = 1;
         off = 0;
         progress_data = zeros(max_iter+1, 2);
+        
+        cfg = [cfg mode quant dist];
+        ant = AntArray(pop{1,1}.M, freq, [], elsp, [], 0);
+        save_state(cfg);
+        ant.saveCfg();
         save_state(pop, eva, 0);
+        
         dial.setSubString('Initial data saved');
         dial.terminate();
         
@@ -285,7 +289,7 @@ try
         fold_name = [dir num2str(iter) '/arrangement_'];
         for i=1:pop_sz
             tmp = dlmread([fold_name num2str(i) '.dat']);
-            pop{i} = AntArray(tmp, freq, [], elsp);
+            pop{i} = AntArray(tmp, freq, [], elsp, [], 0);
             
             quant_cond = sum(sum(tmp(1:2:end,:)~= tmp(2:2:end,:))) == 0;
             quant_cond = quant_cond && sum(sum(tmp(:,1:2:end) ~= tmp(:,2:2:end))) == 0;
@@ -424,7 +428,7 @@ try
             % -----------------------
             for j=1:trn_sz
                 inds{j} = AntArray(chrom2mat(chroms{j}, quant), ...
-                                    freq, [], elsp);
+                                    freq, [], elsp, [], 0);
                 vals(j) = fitness(inds{j}, dist, mode);
             end;
             eva_tmp(:, i) = vals;
