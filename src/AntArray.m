@@ -27,6 +27,7 @@
 %   comments        comment string, will be printed on elements' plot
 %   pwr             input power [W]
 %   weight_ang      weight angle [rad]
+%   datetime        datetime of object creation
 %   normalized      has the input power been normalized (bool)
 %   plotres         save the resulting plots (bool)
 %   dispwait        display the waitbars (bool)
@@ -90,6 +91,8 @@ classdef AntArray
         normalized      % has the input power been normalized (bool)
         plotres = 1     % save the resulting plots (bool)
         dispwait = 1    % display the waitbars (bool)
+        
+        datetime        % datetime of object creation
     end
     methods
         %% Constructor
@@ -242,6 +245,8 @@ classdef AntArray
                     end;
                 end;
             end;
+            
+            obj.datetime = datestr(now, 'yyyymmddHHMMSS');
         end
                
         %% Function to set the output file name
@@ -1616,18 +1621,13 @@ classdef AntArray
             cfg(:, 1) = names;
             cfg(:, 2) = vals;
             
-            persistent sav_loc
-            persistent sav_name
-            if isempty(sav_loc)
-                sav_loc = [datestr(now, 'yyyymmdd') '/cfg'];
-            end;
-            if isempty(sav_name) && isempty(obj.name)
-                sav_name = datestr(now, 'HHMMSS');
-            elseif ~isempty(obj.name) && isempty(sav_name)
-                sav_name = obj.name(2:end);
-            elseif ~isempty(obj.name) && ~isempty(sav_name) ...
-                    && ~strcmp(obj.name, sav_name)
-                delete([sav_loc '/' sav_name '.cfg']);
+            sav_loc = obj.datetime(1:8);
+            sav_name = obj.datetime(9:end);
+    
+            if ~isempty(obj.name)
+                if exist([sav_loc '/cfg/' sav_name '.cfg'], 'file')
+                    delete([sav_loc '/cfg/' sav_name '.cfg']);
+                end;
                 sav_name = obj.name(2:end);
             end;
             
@@ -1637,7 +1637,8 @@ classdef AntArray
             
             structarr = cell2struct(cfg(:,2), cfg(:,1), 1);
             
-            save([sav_loc '/' sav_name '.cfg'], 'structarr', '-MAT', '-v7.3');
+            save([sav_loc '/cfg/' sav_name '.cfg'], 'structarr', ...
+                '-MAT', '-v7.3');
         end
         
     end
