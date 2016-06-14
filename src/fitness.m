@@ -37,7 +37,7 @@ function weight = fitness(ant, dist, mode)
     step = 30;
     const = step*step/1000/1000; % converted to m²
     
-    ant = ant.disableWaitbars();
+    ant = ant.waitbars(0);
     
     [~, ptrn] = ant.genPattern(dist, 3000, 'YZ-main', step);
     
@@ -55,7 +55,7 @@ function weight = fitness(ant, dist, mode)
         end;
         
         for j=1:length(vect)
-            if ptrn_ln(j) < AntArray.min_E
+            if ptrn_ln(j) < ant.min_E
                 counter = counter + 1;
                 if counter >= counter_th
                     break;
@@ -70,7 +70,7 @@ function weight = fitness(ant, dist, mode)
         mask(i,:) = vect;
     end;
     
-    ptrn = ptrn - AntArray.min_E;
+    ptrn = ptrn - ant.min_E;
     ptrn(mask == 0) = 0;
     
     if isempty(ptrn)

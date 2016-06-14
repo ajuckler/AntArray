@@ -17,7 +17,7 @@ classdef CfgDialog < handle
                 'Units', 'pixels', ...
                 'Position', [xpos ypos sizeW], ...
                 'Visible', 'off', ...
-                'DeleteFcn', {@close, obj});
+                'DeleteFcn', {@closeAction, obj});
             obj.fields = struct();
 
             for i=1:length(list)
@@ -44,13 +44,13 @@ classdef CfgDialog < handle
                'String', 'Cancel', ...
                'FontSize', 9, ...
                'BackgroundColor', [.99 .18 .18], ...
-               'Callback', {@cancel, obj});
+               'Callback', {@cancelAction, obj});
             uicontrol('Parent', obj.handler, ...
                'Position', [btn_left+sizeW(1)/2 15 btn_width 25], ...
                'String', 'Confirm', ...
                'FontSize', 9, ...
                'BackgroundColor', [.09 .79 .06], ...
-               'Callback', {@confirm, obj});
+               'Callback', {@confirmAction, obj});
             
             set(obj.handler, 'Visible', 'on');
             drawnow;
@@ -93,17 +93,17 @@ classdef CfgDialog < handle
         end;
     end;
     methods (Access='private')
-        function cancel(hObject, callbackdata, obj)
+        function cancelAction(hObject, callbackdata, obj)
             fl = fieldnames(obj.fields);
             for i=1:length(fl)
                 obj.fields.(fl{i}) = [];
             end;
             
             set(obj.ptr, 'UserData', obj.fields);
-            obj.close();
+            delete(obj.handler);
         end
 
-        function confirm(hObject, callbackdata, obj)
+        function confirmAction(hObject, callbackdata, obj)
             set(obj.handler, 'UserData', 1);
             els = guidata(obj.handler);
             fl = fieldnames(els);
@@ -133,14 +133,17 @@ classdef CfgDialog < handle
             end;
             set(obj.ptr, 'UserData', obj.fields);
 
-            obj.close();
+            delete(obj.handler);
         end
         
-        function close(obj)
-            if get(obj.handler, 'UserData') ~= 1
-                obj.cancel();
+        function closeAction(hObject, callbackdata, obj)
+            if isempty(get(obj.handler, 'UserData'))
+                cancelAction(hObject, callbackdata, obj);
             end;
-            delete(obj.handler);
+            
+            if ishandle(obj.handler)
+                delete(obj.handler);
+            end;
         end
     end;
 end

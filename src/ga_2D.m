@@ -208,7 +208,7 @@ try
         iter = 1;
         off = 0;
         progress_data = zeros(max_iter+1, 2);
-        save_state(pop, eva, iter);
+        save_state(pop, eva, 0);
         dial.setSubString('Initial data saved');
         dial.terminate();
         
@@ -337,6 +337,7 @@ try
             pop{pos+i-1} = temp_ind;
             eva(pos+i-1) = temp_val;
         end;
+        fname = save_state(pop, eva, iter);
 
         pop_tmp = pop;  % Tmp variable needed for parfor-loop
         eva_tmp = eva;
@@ -462,8 +463,6 @@ try
         else
             mut_prob = mut_prob_df;
         end;
-
-        fname = save_state(pop, eva, iter);
         
         % Add iterations if no good convergence
         % -------------------------------------
@@ -479,6 +478,7 @@ try
             end;
         end;
     end;
+    save_state(pop, eva, iter);
     dial.terminate();
     
     delete(dial);

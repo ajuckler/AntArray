@@ -26,6 +26,7 @@ function convertFitness(inname, dist, inmode)
     for i=0:10
         str = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
         if exist([str '/fig/fitness_' inname '.fig'], 'file')
+            infile = [str '/fig/fitness_' inname '.fig'];
             break;
         elseif i == 10
             error 'Could not find specified file';
@@ -45,11 +46,11 @@ function convertFitness(inname, dist, inmode)
     
     % Check for config file availability
     k = max(0, i-1);
-    for j=i:k
+    for j=k:i
         str = datestr(addtodate(now, -j, 'day'), 'yyyymmdd');
         if exist([str '/cfg/' inname '.cfg'], 'file')
             break;
-        elseif j == k
+        elseif j == i
             error 'Could not find config file';
         end;
     end;
@@ -69,7 +70,7 @@ function convertFitness(inname, dist, inmode)
     clearvars kids
     
     parallel_pool('start');
-    parfor i=1:length(newdata)
+    for i=1:length(newdata)
         currfile = [GA_fold '/' num2str(i) '/arrangement_1.dat'];
         if ~exist(currfile, 'file')
             error(['File not found at iteration ' num2str(i)]);
@@ -78,9 +79,8 @@ function convertFitness(inname, dist, inmode)
         newdata(i) = fitness(ant, dist, ~inmode);
     end;
     
-    
     fig = figure(1);
-    plot(1:length(newdata), newdata(:,1), '-b', 'LineWidth', 2);
+    plot(1:length(newdata), newdata, '-b', 'LineWidth', 2);
     hold on
 
     xlim([1 length(newdata)]);
@@ -95,7 +95,8 @@ function convertFitness(inname, dist, inmode)
     set(get(fig, 'CurrentAxes'), 'FontSize', 16);
     hold off;
 
-    print_plots(gcf, ['fitness_' fname]);
+    print_plots(gcf, ['fitness_' inname '_' num2str(~inmode)]);
     close all
-
+    
+    parallel_pool('stop');
 end

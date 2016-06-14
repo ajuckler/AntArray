@@ -40,6 +40,7 @@
 %   setComments     set the comments
 %   setNormFreq     set the frequency used at normalization
 %   setNormPwr      set the input power
+%   setEth          set the minimal electric field level for reception
 %   setPref         set a parameter value as a preference
 %   saveCfg         save current configuration to file
 %   waitbars        turn waitbars on/off
@@ -408,6 +409,29 @@ classdef AntArray
             
             obj.pwr = n_pwr;
             obj.normalized = 0;
+        end
+        
+        %% Function to set minimal electric field for reception
+        function obj = setEth(obj, val)
+            %SETETH set the minimal electric field for reception
+            %
+            % This value will be used for generating BW plots and weighting
+            %
+            % obj = SETETH(obj, val)
+            %
+            % INPUT
+            %   obj:    AntArray object
+            %   val:    minimal electric field [dB V/m]
+            % OUTPUT
+            %   obj:    AntArray object
+            %
+            % See also WEIGHT GENPATTERN
+            
+            if ~isa(val, 'numeric')
+                error 'Invalid VAL argument';
+            else
+                obj.E_min = val;
+            end;
         end
         
         %% Turn waitbars on/off
@@ -1596,9 +1620,13 @@ classdef AntArray
             persistent sav_name
             if isempty(sav_loc)
                 sav_loc = [datestr(now, 'yyyymmdd') '/cfg'];
-                sav_name = datestr(now, 'HHMMSS');
             end;
-            if ~isempty(obj.name) && ~strcmp(obj.name, sav_name)
+            if isempty(sav_name) && isempty(obj.name)
+                sav_name = datestr(now, 'HHMMSS');
+            elseif ~isempty(obj.name) && isempty(sav_name)
+                sav_name = obj.name(2:end);
+            elseif ~isempty(obj.name) && ~isempty(sav_name) ...
+                    && ~strcmp(obj.name, sav_name)
                 delete([sav_loc '/' sav_name '.cfg']);
                 sav_name = obj.name(2:end);
             end;

@@ -8,6 +8,7 @@ run2.m
 *.lnk
 *.xls*
 *.mat
+untitled.fig
 E_XY.m
 E_YZ.m
 E_array.m
