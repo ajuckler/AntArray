@@ -15,6 +15,11 @@
 % Copyright 2016, Antoine Juckler. All rights reserved.
 
 function convertFitness(inname, dist, inmode, evth)
+    if nargin < 4 || isempty(evth)
+        evth = 0;
+    else
+        evth = evth > 0;
+    end;
     inmode = inmode > 0;
     
     % Check that files exist
