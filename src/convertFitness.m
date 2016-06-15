@@ -29,21 +29,22 @@ function convertFitness(inname, dist, inmode, evth)
         inname = inname(1:end-3);
     end;
     i = 0;
-    for i=0:10
+    maxsearch = 10;
+    for i=0:maxsearch
         str = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
         if exist([str '/fig/fitness_' inname '.fig'], 'file')
             infile = [str '/fig/fitness_' inname '.fig'];
             break;
-        elseif i == 10
+        elseif i == maxsearch
             error 'Could not find specified file';
         end;
     end;
 
-    for j=0:10
+    for j=0:maxsearch
         str = datestr(addtodate(now, -i-j, 'day'), 'yyyymmdd');
         if exist([str '/' inname], 'dir')
             break;
-        elseif j == 10
+        elseif j == maxsearch
             error 'Could not find GA files';
         end;
     end;
@@ -103,13 +104,51 @@ function convertFitness(inname, dist, inmode, evth)
             dial.setMainString('Starting...');
             
             % Create save folder
-            dirname = [datestr(now, 'yyyymmdd') '/' inname '_conv'];
-            if ~exist(dirname, 'dir')
-                mkdir(dirname);
+            dirname = [inname '_conv'];
+            % Find if previously started
+            for i=0:maxsearch
+                dirprefix = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
+                if exist([dirprefix '/' dirname], 'dir')
+                    dirname = [dirprefix '/' dirname];
+                    j = 1;
+                    while exist([dirname '/' num2str(j)], 'dir')
+                        j = j+1;
+                    end;
+                    startit = j;
+                    dial.setMainString('Previous generation data found');
+                    dial.setSubString(['Starting from iteration ' num2str(j)]);
+                    pause(0.5);
+                    
+                    fitname = [dirprefix '/fig/fitness_' inname '_' ...
+                            num2str(~inmode) '_evth.fig'];
+                    if ~exist(fitname, 'file')
+                        error 'Unable to find last run fig file';
+                    end;
+                    fig = openfig(fitname, 'new', 'invisible');
+                    kids = get(get(fig, 'CurrentAxes'), 'Children');
+    
+                    if length(kids) ~= 3
+                        error 'Wrong format of fitness plot';
+                    end;
+                    
+                    for j=1:3
+                        plotdata = get(kids(j), 'YData');
+                        newdata(i, 1:startit-1) = plotdata(1:startit-1);
+                    end;
+                    close(fig);
+                    
+                    break;
+                elseif i == maxsearch
+                    dirprefix = datestr(now, 'yyyymmdd');
+                    dirname = [dirprefix '/' dirname];
+                    mkdir(dirname);
+                    startit = 1;
+                end;
             end;
+            dial.terminate();
             
             maxi = length(newdata);
-            for i=1:maxi
+            for i=startit:maxi
                 dial.setMainString(['Working on population ' ...
                         num2str(i) ' of ' num2str(maxi) '...']);
                 vals = zeros(1, maxi);
@@ -149,22 +188,23 @@ function convertFitness(inname, dist, inmode, evth)
                     rethrow(ME);
             end;
         end;
+        
+        if ishandle(dial)
+            delete(dial);
+        end;
     end;
     
     fig = figure(1);
     plot(1:length(newdata), newdata(1, :), '-b', 'LineWidth', 2, ...
         'DisplayName', 'Converted max');
     hold on
+    
     if evth
         plot(1:length(newdata), newdata(2, :), '-r', 'LineWidth', 2, ...
             'DisplayName', 'Converted mean');
         plot(1:length(newdata), newdata(3, :), '-g', 'LineWidth', 2, ...
             'DisplayName', 'New max');
-        L = legend('Location', 'southeast');
-        set(L, 'Interpreter', 'latex', 'FontSize', 20);
     end;  
-
-    xlim([1 length(newdata)]);
 
     xlabel('Iteration', 'Interpreter', 'latex', 'FontSize', 22);
     if ~inmode == 0
@@ -173,6 +213,13 @@ function convertFitness(inname, dist, inmode, evth)
         label = 'Fitness [$m^2$]';
     end;
     ylabel(label, 'Interpreter', 'latex', 'FontSize', 22);
+    
+    if evth
+        L = legend('Location', 'southeast');
+        set(L, 'Interpreter', 'latex', 'FontSize', 20);
+    end;
+    xlim([1 length(newdata)]);
+    
     set(get(fig, 'CurrentAxes'), 'FontSize', 16);
     hold off;
     
