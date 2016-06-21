@@ -17,7 +17,7 @@ classdef CfgDialog < handle
                 'Units', 'pixels', ...
                 'Position', [xpos ypos sizeW], ...
                 'Visible', 'off', ...
-                'DeleteFcn', {@closeAction, obj});
+                'DeleteFcn', {@CfgDialog.closeAction, obj});
             obj.fields = struct();
 
             for i=1:length(list)
@@ -44,14 +44,15 @@ classdef CfgDialog < handle
                'String', 'Cancel', ...
                'FontSize', 9, ...
                'BackgroundColor', [.99 .18 .18], ...
-               'Callback', {@cancelAction, obj});
+               'Callback', {@CfgDialog.cancelAction, obj});
             uicontrol('Parent', obj.handler, ...
                'Position', [btn_left+sizeW(1)/2 15 btn_width 25], ...
                'String', 'Confirm', ...
                'FontSize', 9, ...
                'BackgroundColor', [.09 .79 .06], ...
-               'Callback', {@confirmAction, obj});
+               'Callback', {@CfgDialog.confirmAction, obj});
             
+            set(obj.handler, 'MenuBar', 'none');
             set(obj.handler, 'Visible', 'on');
             drawnow;
             
@@ -92,7 +93,7 @@ classdef CfgDialog < handle
             close(obj.ptr);
         end;
     end;
-    methods (Access='private')
+    methods (Static)
         function cancelAction(hObject, callbackdata, obj)
             fl = fieldnames(obj.fields);
             for i=1:length(fl)
@@ -138,7 +139,7 @@ classdef CfgDialog < handle
         
         function closeAction(hObject, callbackdata, obj)
             if isempty(get(obj.handler, 'UserData'))
-                cancelAction(hObject, callbackdata, obj);
+                CfgDialog.cancelAction(hObject, callbackdata, obj);
             end;
             
             if ishandle(obj.handler)
