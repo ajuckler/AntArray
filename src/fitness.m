@@ -26,7 +26,7 @@
 
 %   Copyright 2016, Antoine Juckler. All rights reserved.
 
-function weight = fitness(ant, dist, mode)
+function [weight weight_alt] = fitness(ant, dist, mode)
     if nargin < 3
         mode = 0;
     else
@@ -75,16 +75,24 @@ function weight = fitness(ant, dist, mode)
     
     if isempty(ptrn)
         weight = 0;
+        weight_alt = 0;
     else
         if mode == 1
+            ptrn_alt = ptrn;
             ptrn = mask;
+        else
+            ptrn_alt = mask;
         end;
         % Compute on symmetric part
         weight = 4*const*sum(sum(ptrn(2:end, 2:end)));
+        weight_alt = 4*const*sum(sum(ptrn_alt(2:end, 2:end)));
 
         % Compute on symmetry lines
         weight = weight + const*ptrn(1,1);
         weight = weight + 2*const*sum(ptrn(1, 2:end));
         weight = weight + 2*const*sum(ptrn(2:end, 1));
+        weight_alt = weight_alt + const*ptrn_alt(1,1);
+        weight_alt = weight_alt + 2*const*sum(ptrn_alt(1, 2:end));
+        weight_alt = weight_alt + 2*const*sum(ptrn_alt(2:end, 1));
     end;
 end
