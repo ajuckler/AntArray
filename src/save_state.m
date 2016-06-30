@@ -67,5 +67,5 @@ else
         mkdir(prefix_folder_name);
     end;
     save([prefix_folder_name 'config.ga_2D'], 'pop', '-ASCII');
-
+end;
 end

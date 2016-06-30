@@ -490,7 +490,7 @@ try
 catch ME
     switch ME.identifier
         case 'MyERR:Terminated'
-            warning 'Operation terminated by user';
+            warning('MyWARN:Terminated', 'Operation terminated by user');
         otherwise
             rethrow(ME);
     end;
@@ -502,7 +502,7 @@ parallel_pool('stop');
 % Plot progress
 % -------------
 if ~exist('fname', 'var')
-    warning 'Fitness plot not generated';
+    warning('MyWARN:NoPlot', 'Fitness plot not generated');
     return;
 elseif iter > max_iter
     [optim_val, pos] = max(eva(:));

@@ -29,7 +29,7 @@ function convertFitness(inname, dist, inmode, evth)
         inname = inname(1:end-3);
     end;
     i = 0;
-    maxsearch = 10;
+    maxsearch = 20;
     for i=0:maxsearch
         str = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
         if exist([str '/fig/fitness_' inname '.fig'], 'file')
@@ -52,12 +52,13 @@ function convertFitness(inname, dist, inmode, evth)
     GA_fold = [str '/' inname];
     
     % Check for config file availability
+    kmax = i+j;
     k = max(0, i-1);
-    for j=k:i
+    for j=k:kmax
         str = datestr(addtodate(now, -j, 'day'), 'yyyymmdd');
         if exist([str '/cfg/' inname '.cfg'], 'file')
             break;
-        elseif j == i
+        elseif j == kmax
             error 'Could not find config file';
         end;
     end;
@@ -133,7 +134,7 @@ function convertFitness(inname, dist, inmode, evth)
                     
                     for j=1:3
                         plotdata = get(kids(j), 'YData');
-                        newdata(i, 1:startit-1) = plotdata(1:startit-1);
+                        newdata(4-j, 1:startit-1) = plotdata(1:startit-1);
                     end;
                     close(fig);
                     
@@ -151,6 +152,7 @@ function convertFitness(inname, dist, inmode, evth)
             for i=startit:maxi
                 dial.setMainString(['Working on population ' ...
                         num2str(i) ' of ' num2str(maxi) '...']);
+                dial.terminate();
                 vals = zeros(1, maxi);
                 parfor j=1:num_els
                     currfile = [GA_fold '/' num2str(i) ...
@@ -180,6 +182,7 @@ function convertFitness(inname, dist, inmode, evth)
                 
                 dial.terminate();
             end;
+            delete(dial);
         catch ME
             switch ME.identifier
                 case 'MyERR:Terminated'
@@ -188,13 +191,9 @@ function convertFitness(inname, dist, inmode, evth)
                     rethrow(ME);
             end;
         end;
-        
-        if ishandle(dial)
-            delete(dial);
-        end;
     end;
     
-    fig = figure(1);
+    fig_end = figure();
     plot(1:length(newdata), newdata(1, :), '-b', 'LineWidth', 2, ...
         'DisplayName', 'Converted max');
     hold on
@@ -220,7 +219,7 @@ function convertFitness(inname, dist, inmode, evth)
     end;
     xlim([1 length(newdata)]);
     
-    set(get(fig, 'CurrentAxes'), 'FontSize', 16);
+    set(get(fig_end, 'CurrentAxes'), 'FontSize', 16);
     hold off;
     
     if evth
@@ -228,7 +227,7 @@ function convertFitness(inname, dist, inmode, evth)
     else
         savname = ['fitness_' inname '_' num2str(~inmode)];
     end;
-    print_plots(gcf, savname);
+    print_plots(fig_end, savname);
     close all
     
     parallel_pool('stop');
