@@ -35,7 +35,7 @@
 %   INPUT:
 %       PATH:   path to the folder containing the previous results
 %
-%   See also FITNESS GENCROSSOVERPATTERN CHROM2MAT MAT2CHROM
+%   See also LOCAL_OPT FITNESS GENCROSSOVERPATTERN CHROM2MAT MAT2CHROM
 
 %   Copyright 2016, Antoine Juckler. All rights reserved.
 
