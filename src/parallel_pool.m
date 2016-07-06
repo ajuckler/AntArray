@@ -26,6 +26,8 @@ function res = parallel_pool(mode)
         else
             if isempty(gcp('nocreate'))
                 poolobj = parpool;
+            elseif isempty(poolobj)
+                poolobj = gcp;
             end;
         end;
         res = 0;
@@ -48,7 +50,7 @@ function res = parallel_pool(mode)
             if ~isempty(gcp('nocreate'))
                 res = poolobj.NumWorkers;
             else
-                res = 0;
+                res = 1;
             end;
         end;
     else

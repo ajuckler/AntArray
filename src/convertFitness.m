@@ -29,7 +29,7 @@ function convertFitness(inname, dist, inmode, evth)
         inname = inname(1:end-3);
     end;
     i = 0;
-    maxsearch = 20;
+    maxsearch = 30;
     for i=0:maxsearch
         str = datestr(addtodate(now, -i, 'day'), 'yyyymmdd');
         if exist([str '/fig/fitness_' inname '.fig'], 'file')
@@ -120,8 +120,19 @@ function convertFitness(inname, dist, inmode, evth)
                     dial.setSubString(['Starting from iteration ' num2str(j)]);
                     pause(0.5);
                     
-                    fitname = [dirprefix '/fig/fitness_' inname '_' ...
+                    
+                    ii = 0;
+                    dirpref = datestr(addtodate(now, -i+ii, 'day'), ...
+                        'yyyymmdd');
+                    fitname = [dirpref '/fig/fitness_' inname '_' ...
                             num2str(~inmode) '_evth.fig'];
+                    while ii < 2 && ~exist(fitname, 'file')
+                        dirpref = datestr(addtodate(now, -i+ii, 'day'), ...
+                            'yyyymmdd');
+                        fitname = [dirpref '/fig/fitness_' inname '_' ...
+                            num2str(~inmode) '_evth.fig'];
+                        ii = ii + 1;
+                    end;
                     if ~exist(fitname, 'file')
                         error 'Unable to find last run fig file';
                     end;
