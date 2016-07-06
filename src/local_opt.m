@@ -55,8 +55,9 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
         error('Invalid initial solution');
     end;
     
-    dist_prob = 0.05;   % Distortion probability
-    th_prob = 0.03;
+    dist_prob = 0.01;   % Distortion probability
+    th_prob = 0.03;     % Threshold remaining probability for better solution
+    parfact = 3;
     
     if ispref('loc_opt', 'save_folder')
         rmpref('loc_opt');
@@ -160,7 +161,15 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
 
             % Load progress_data
             % ------------------
+            maxsearch = 10;
             progname = [opt_fold 'dat/fitness_loc_' fname '.dat'];
+            ii = 1;
+            while ii <= maxsearch && ~exist(progname, 'file')
+                fold = datestr(addtodate(datenum(opt_fold(1:end-1), ...
+                    'yyyymmdd'), ii, 'day'), 'yyyymmdd');
+                progname = [fold '/dat/fitness_loc_' fname '.dat'];
+                ii = ii + 1;
+            end;
             if ~exist(progname, 'file')
                 error('MyERR:FileNotFound', 'Progress file not found');
             else
@@ -202,18 +211,20 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
             params.mode = mode;
             params.opt_name = opt_name;
 
-            pariter = floor((maxiter-subiter)/2/nworkers);
+            pariter = floor((maxiter-subiter)/parfact/nworkers);
             stopi = pariter;
-            for i=1:stopi
+            skipindex = 0;
+            i = 1;
+            while i <= stopi
                 dial.setSubString(['Subiteration ' num2str(i) ' on ' ...
                     num2str(stopi)]);
                 dial.terminate();
 
                 if i <= pariter
-                    beginit = subiter + (i-1)*2*nworkers+1;
-                    endit = subiter + i*2*nworkers;
+                    beginit = subiter + (i-1)*parfact*nworkers+1;
+                    endit = subiter + i*parfact*nworkers;
                 elseif i == pariter+1
-                    beginit = subiter + pariter*2*nworkers+1;
+                    beginit = subiter + pariter*parfact*nworkers+1;
                     endit = maxiter;
                 elseif i == pariter+2
                     beginit = maxiter;
@@ -239,12 +250,14 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
                     end;
                 end;
 
-                if i == pariter && pariter*2*nworkers+subiter ~= maxiter
-                    stopi = stopi+1;
+                if i == pariter && pariter*parfact*nworkers+subiter ~= maxiter
+                    stopi = pariter+1;
                 elseif i >= pariter && tmp_val == best_val
-                    stopi = stopi+2;
-                    i = stopi+1;
+                    stopi = pariter+2;
+                    i = pariter+1;
                 end;
+                
+                i = i + 1;
                 
                 dial.terminate();
             end
@@ -292,6 +305,7 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
         % ------------------------------ %
         %         Start / resume         %
         % ------------------------------ %
+        subiter = 0;
         fname = opt_name(end-5:end);
         params = struct();
         params.quanti = quanti;
@@ -312,18 +326,19 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
 
             maxiter = ceil((1-th_prob)*length(pos));
             nworkers = parallel_pool('status');
-            pariter = floor(maxiter/2/nworkers);
+            pariter = floor(maxiter/parfact/nworkers);
             stopi = pariter;
-            for i=1:stopi
+            i = 1;
+            while i <= stopi
                 dial.setSubString(['Subiteration ' num2str(i) ' of ' ...
                     num2str(stopi)]);
                 dial.terminate();
 
                 if i <= pariter
-                    beginit = (i-1)*2*nworkers+1;
-                    endit = i*2*nworkers;
+                    beginit = (i-1)*parfact*nworkers+1;
+                    endit = i*parfact*nworkers;
                 elseif i == pariter+1
-                    beginit = pariter*2*nworkers+1;
+                    beginit = pariter*parfact*nworkers+1;
                     endit = maxiter;
                 elseif i == pariter+2
                     beginit = maxiter;
@@ -349,12 +364,14 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
                     end;
                 end;
 
-                if i == pariter && pariter*2*nworkers+subiter ~= maxiter
-                    stopi = stopi+1;
+                if i == pariter && pariter*parfact*nworkers ~= maxiter
+                    stopi = pariter+1;
                 elseif i >= pariter && tmp_val == best_val
-                    stopi = stopi+2;
-                    i = stopi+1;
+                    stopi = pariter+2;
+                    i = pariter+1;
                 end;
+                
+                i = i + 1;
                 
                 dial.terminate();
             end
@@ -412,10 +429,11 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
             case 'MyERR:Terminated'
                 warning('MyWARN:Terminated', 'Operation terminated by user');
                 savdata = struct();
+                i = max(i-1, 0);
                 if i >= pariter+1
-                    i == maxiter;
+                    savdata.subiter = maxiter;
                 else
-                    savdata.subiter = i*2*nworkers;
+                    savdata.subiter = i*parfact*nworkers+subiter;
                 end;
                 savdata.best = best;
                 savdata.pos = pos;
@@ -449,7 +467,7 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
     % Plot progress
     % -------------
     if ~exist('fname', 'var') || iter == 1
-        warning('MyWARN:NoPlot', 'Progress plot no generated');
+        warning('MyWARN:NoPlot', 'Progress plot not generated');
         return;
     end;
     % Convert to double matrix
