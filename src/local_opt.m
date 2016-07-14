@@ -57,7 +57,7 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
     
     dist_prob = 0.01;   % Distortion probability
     th_prob = 0.03;     % Threshold remaining probability for better solution
-    parfact = 3;
+    parfact = 3;        % Factor for parallel computing
     
     if ispref('loc_opt', 'save_folder')
         rmpref('loc_opt');
@@ -144,7 +144,7 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
             iter = 1;
             visited_list = {};
             while exist([start_pop num2str(iter)], 'dir')
-                if ~exist([start_pop num2str(iter) '/chroms.dat'])
+                if ~exist([start_pop num2str(iter) '/chroms.dat'], 'file')
                     error('MyERR:FileNotFound', ['Chromosome list not ' ...
                         'found at iteration ' num2str(iter)]);
                 else
@@ -213,7 +213,6 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
 
             pariter = floor((maxiter-subiter)/parfact/nworkers);
             stopi = pariter;
-            skipindex = 0;
             i = 1;
             while i <= stopi
                 dial.setSubString(['Subiteration ' num2str(i) ' on ' ...
@@ -252,7 +251,7 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
 
                 if i == pariter && pariter*parfact*nworkers+subiter ~= maxiter
                     stopi = pariter+1;
-                elseif i >= pariter && tmp_val == best_val
+                elseif i < pariter+2 && i >= pariter && tmp_val == best_val
                     stopi = pariter+2;
                     i = pariter+1;
                 end;
@@ -366,7 +365,7 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
 
                 if i == pariter && pariter*parfact*nworkers ~= maxiter
                     stopi = pariter+1;
-                elseif i >= pariter && tmp_val == best_val
+                elseif i < pariter+2 && i >= pariter && tmp_val == best_val
                     stopi = pariter+2;
                     i = pariter+1;
                 end;

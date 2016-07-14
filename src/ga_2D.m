@@ -174,7 +174,9 @@ try
             pop(1:end_index) = start_pop(1:end_index);
         end;
         for i=end_index+1:pop_sz
-            chrom = randi([0 1], 1, chrom_sz*chrom_sz);
+            layout = genLayout(chrom_sz,1);
+            chrom = reshape(layout{1}, 1, numel(layout{1}));
+            % chrom = randi([0 1], 1, chrom_sz*chrom_sz);
             pop{i} = AntArray(...
                     chrom2mat(chrom, quant), freq, [], elsp, [], 0);
             dial.terminate();
