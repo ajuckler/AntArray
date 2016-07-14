@@ -136,11 +136,15 @@ classdef AntArray
             if nargin < 4 || isempty(s)
                 s = 1;
             end;
-            if nargin < 3 || isempty(l)
-                l = 2.1826855509101;
-            end;
             if nargin < 2 || isempty(f)
                 f = 60500;
+            end;
+            if nargin < 3 || isempty(l)
+                if f == 60500
+                    l = 2.1826855509101;
+                else    % Half-wavelength dipole
+                    l = AntArray.c0/f/1000000/2;
+                end;
             end;
             if nargin < 1 || isempty(M)
                 M = zeros(64);
@@ -186,7 +190,7 @@ classdef AntArray
             obj.min_E_str = 0;
             obj.normalized = 0;
             obj.pwr = 10*10^-3;
-            obj.weight_ang = pi/18; % 10°
+            obj.weight_ang = pi/18; % 10Â°
             
             obj.dire = zeros(length(M));
             obj.dire(M~=0) = 1;
@@ -556,7 +560,6 @@ classdef AntArray
             % Assign final values
             obj.M = tmp_M;
             obj.normalized = 0;
-            
         end
         
         %% Function to adapt element amplitude according to a profile
@@ -1383,7 +1386,6 @@ classdef AntArray
             print_plots(gcf, [savname '_weight']);
             
             close all;
-            
         end
         
         %% Function to compute the directivity
@@ -1528,7 +1530,8 @@ classdef AntArray
                     plot(cl, rl, 'LineStyle', 'none', ...
                         'DisplayName', [obj.dire_str{i} ' - ' mat2str(length(rl))], ...
                         'MarkerFaceColor', colors{colorind}, ...
-                        'Marker', markers{markerind}, 'MarkerSize', 5);
+                        'Color', 'k', 'LineWidth', .4, ...
+                        'Marker', markers{markerind}, 'MarkerSize', 7);
                 end;
             end;
             
@@ -1541,6 +1544,8 @@ classdef AntArray
             
             L = legend('Location', 'eastoutside');
             set(L, 'Interpreter', 'latex', 'FontSize', 20);
+            % set(get(L, 'Title'), 'String', 'Focus point (x, y, z) - # els.');
+            % set(get(L, 'Title'), 'FontSize', 18);
             
             if cont == 1
                 cc = length(obj.M)+1;
@@ -1552,6 +1557,7 @@ classdef AntArray
             
             title('\textbf{Array arrangement}', ...
                 'Interpreter', 'latex', 'FontSize', 24);
+            set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
             axis off;
             
             if ~strcmp(obj.comments, '')
@@ -1598,7 +1604,6 @@ classdef AntArray
 
             propfield = eval(prop);
             setpref('AntArray', prop, obj.propfield);
-            
         end
         
         %% Function to save current configuration to file
@@ -1748,7 +1753,7 @@ classdef AntArray
             [absc, oord] = meshgrid([range range(end)+ss*fact]);  % Larger to be able to plot evth
 
             % Plot field
-            figure(1);
+            fig = figure(1);
             surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
                 'LineStyle', 'none');
             view(2);
@@ -1760,15 +1765,16 @@ classdef AntArray
             cmax = max(max(plotdata(:,:)));
             antsize = length(obj.M)*obj.spacing*fact;
             lpos = antsize/2;
-            plot3([-lpos+ss/2 lpos+ss/2], [-lpos+ss/2 -lpos+ss/2], ...
+            sss = ss*fact;
+            plot3([-lpos+sss/2 lpos+sss/2], [-lpos+sss/2 -lpos+sss/2], ...
                 [cmax+5 cmax+5], '-k', 'LineWidth', 1);
-            plot3([-lpos+ss/2 lpos+ss/2], [lpos+ss/2 lpos+ss/2],...
+            plot3([-lpos+sss/2 lpos+sss/2], [lpos+sss/2 lpos+sss/2],...
                 [cmax+5 cmax+5], '-k', 'LineWidth', 1);
-            plot3([-lpos+ss/2 -lpos+ss/2], [-lpos+ss/2 lpos+ss/2],...
+            plot3([-lpos+sss/2 -lpos+sss/2], [-lpos+sss/2 lpos+sss/2],...
                 [cmax+5 cmax+5], '-k', 'LineWidth', 1);
-            plot3([lpos+ss/2 lpos+ss/2], [-lpos+ss/2 lpos+ss/2],...
+            plot3([lpos+sss/2 lpos+sss/2], [-lpos+sss/2 lpos+sss/2],...
                 [cmax+5 cmax+5], '-k', 'LineWidth', 1);
-            plot3(ss/2, ss/2, cmax+5, '-k', 'MarkerFaceColor', 'k', ...
+            plot3(sss/2, sss/2, cmax+5, '-k', 'MarkerFaceColor', 'k', ...
                 'Marker', '+', 'MarkerSize', 5);
 
             % Adapt color map
@@ -1800,9 +1806,10 @@ classdef AntArray
 
             xlim([range(1), range(end)+ss*fact]);
             ylim([range(1), range(end)+ss*fact]);
-            set(gca, 'XTick', spe_ticks_pos, ...
+            set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
+            set(get(fig, 'CurrentAxes'), 'XTick', spe_ticks_pos, ...
                 'XTickLabel', spe_ticks);
-            set(gca, 'YTick', spe_ticks_pos, ...
+            set(get(fig, 'CurrentAxes'), 'YTick', spe_ticks_pos, ...
                 'YTickLabel', spe_ticks);
 
             % Set labels and title
@@ -1821,7 +1828,7 @@ classdef AntArray
                 'Interpreter', 'latex', 'FontSize', 22);
             ylabel(['${\rm z}_{\rm pos}$ [' unit ']'], ...
                 'Interpreter', 'latex', 'FontSize', 22);
-            set(gca, 'FontSize', 16);
+            set(get(fig, 'CurrentAxes'), 'FontSize', 16);
 
             savname = ['pattern' obj.name '_' mat2str(d)];
             print_plots(gcf, savname);
@@ -1952,7 +1959,7 @@ classdef AntArray
             [absc, oord] = meshgrid([range range(end)+ss*fact]);  % Larger to be able to plot evth
 
             % Plot field
-            figure(1);
+            fig = figure(1);
             surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
                 'LineStyle', 'none');
             view(2);
@@ -2004,10 +2011,11 @@ classdef AntArray
 
             xlim([range(1), range(end)+ss*fact]);
             ylim([range(1), range(end)+ss*fact]);
-            set(gca, 'XTick', spe_ticks_pos, ...
+            set(get(fig, 'CurrentAxes'), 'XTick', spe_ticks_pos, ...
                 'XTickLabel', spe_ticks);
-            set(gca, 'YTick', spe_ticks_pos, ...
+            set(get(fig, 'CurrentAxes'), 'YTick', spe_ticks_pos, ...
                 'YTickLabel', spe_ticks);
+            set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
 
             % Set labels and title
             title(['\textbf{Electric field at ', mat2str(d), '\,m}'], ...
@@ -2025,7 +2033,7 @@ classdef AntArray
                 'Interpreter', 'latex', 'FontSize', 22);
             ylabel(['${\rm z}_{\rm pos}$ [' unit ']'], ...
                 'Interpreter', 'latex', 'FontSize', 22);
-            set(gca, 'FontSize', 16);
+            set(get(fig, 'CurrentAxes'), 'FontSize', 16);
 
             savname = ['pattern' obj.name '_' mat2str(d) '_main'];
             print_plots(gcf, savname);
@@ -2706,7 +2714,7 @@ classdef AntArray
                     continue;
                 end;
                 row = mod(i, size(obj.M,1));
-                col = ceil(i/size(obj.M, 1));
+                col = ceil(i/size(obj.M,1));
                 if row == 0
                     row = size(obj.M,1);
                 end;
@@ -3039,7 +3047,6 @@ classdef AntArray
                 warning('MyWARN:out_of_plot_area', ...
                     'The specified point might be out of plotted area');
             end;
-            
         end
         
         %% Quantize a matrix
