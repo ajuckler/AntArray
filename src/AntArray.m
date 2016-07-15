@@ -468,7 +468,7 @@ classdef AntArray
         end
         
         %% Function to add focused antenna pattern to the array
-        function obj = adaptArray(obj, M, x, y, z)
+        function obj = adaptArray(obj, Min, x, y, z)
             %ADAPTARRAY add elements to the antenna array
             %
             % The elements' excitation will be adapted as to focus to a
@@ -491,7 +491,7 @@ classdef AntArray
                 z = 0;
             end;
             
-            if size(M,1) < size(obj.M,1) || size(M,2) < size(obj.M, 2)
+            if size(Min,1) < size(obj.M,1) || size(Min,2) < size(obj.M, 2)
                 error('Matrix sizes do not match');
             end;
             
@@ -501,17 +501,18 @@ classdef AntArray
             end;
             obj.dire_str{dire_index} = ['(' mat2str(x) ', ' mat2str(y) ', ' ...
                 mat2str(z) ')'];
-            obj.dire(M~=0) = dire_index;
+            obj.dire(Min~=0) = dire_index;
             
-            if ~isempty(M(M(M ~= 0)~=1))
-                pos = find(M(M ~= 0)~=1);
-                obj.M(pos) = M(pos);
+            if ~isempty(Min(Min(Min ~= 0)~=1))
+                pos = find(Min(Min ~= 0)~=1);
+                obj.M(pos) = Min(pos);
                 return
             end;
             
             
             lambda = obj.c0/obj.freq;
             s = obj.spacing;
+            k = 2*pi/lambda;
 
             x = x/1000;
             y = y/1000;
@@ -524,33 +525,33 @@ classdef AntArray
             gamma = rho_g/2/L^2*lambda;
             disp(['Gamma: ' mat2str(gamma)]);
             
-            tmp_M = M;
+            tmp_M = Min;
             
             % Excite elements appropriately for focusing
-            if mod(size(M,1), 2) == 0
-                turnover = size(M,1)/2;
+            if mod(size(Min,1), 2) == 0
+                turnover = size(Min,1)/2;
 
-                for i=1:size(M,1)
+                for i=1:size(Min,1)
                     z_el = (turnover-i)*s + s/2;
-                    for j=1:size(M,2)
+                    for j=1:size(Min,2)
                         y_el = (j-turnover)*s - s/2;
 
-                        if M(i,j) == 1
-                            phi = 2*pi/lambda * (sqrt(x^2+(y_el-y)^2+(z_el-z)^2) - rho);
+                        if Min(i,j) == 1
+                            phi = k * (sqrt(x^2+(y-y_el)^2+(z-z_el)^2) - rho);
                             tmp_M(i,j) = exp(-1j*phi);
                         end;
                     end;
                 end;
             else
-                turnover = (size(M,1)-1)/2;
+                turnover = (size(Min,1)-1)/2;
 
-                for i=1:size(M,1)
+                for i=1:size(Min,1)
                     z_el = (turnover-i+1)*s;
-                    for j=1:size(M,2)
+                    for j=1:size(Min,2)
                         y_el = (j-turnover-1)*s;
 
-                        if M(i,j) == 1
-                            phi = 2*pi/lambda * (sqrt(x^2+(y_el-y)^2+(z_el-z)^2) - rho);
+                        if Min(i,j) == 1
+                            phi = k * (sqrt(x^2+(y_el-y)^2+(z_el-z)^2) - rho);
                             tmp_M(i,j) = exp(-1j*phi);
                         end;
                     end;
@@ -558,7 +559,7 @@ classdef AntArray
             end;
             
             % Assign final values
-            obj.M = tmp_M;
+            obj.M(Min ~= 0) = tmp_M(Min ~= 0);
             obj.normalized = 0;
         end
         
