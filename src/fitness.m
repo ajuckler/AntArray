@@ -71,6 +71,7 @@ function [weight weight_alt] = fitness(ant, dist, mode)
     end;
     
     ptrn = ptrn - ant.min_E;
+    ptrn = 10.^(ptrn./20);
     ptrn(mask == 0) = 0;
     
     if isempty(ptrn)

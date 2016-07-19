@@ -1522,6 +1522,11 @@ classdef AntArray
             
             fig = figure();
             hold on;
+            if length(obj.M) <= 16
+                msize = 7;
+            else
+                msize = 5;
+            end;
             for i=1:maxval
                 if ~isempty(find(obj.dire,i))
                     [rl, cl] = find(obj.dire == i);
@@ -1532,7 +1537,7 @@ classdef AntArray
                         'DisplayName', [obj.dire_str{i} ' - ' mat2str(length(rl))], ...
                         'MarkerFaceColor', colors{colorind}, ...
                         'Color', 'k', 'LineWidth', .4, ...
-                        'Marker', markers{markerind}, 'MarkerSize', 7);
+                        'Marker', markers{markerind}, 'MarkerSize', msize);
                 end;
             end;
             
