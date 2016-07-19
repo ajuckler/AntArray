@@ -1,9 +1,10 @@
-function fname = save_state(pop, eva, iter)
+function fname = save_state(pop, eva, eva_c, iter)
 % Save current state of the optimization algorithm
 %
 % INPUT:
 %   pop:    population cell array OR config data
 %   eva:    fitness vector
+%   eva_c:  fitness vector (of the other fitness mode)
 %   iter:   iteration
 %
 
@@ -14,6 +15,10 @@ elseif isempty(eva) && length(pop) == numel(pop)
     config = 1;
 else
     config = 0;
+end;
+if nargin == 3
+    iter = eva_c;
+    eva_c = [];
 end;
 
 if ~config
@@ -26,9 +31,15 @@ if ~config
     if numel(eva) ~= length(eva)
         eva = reshape(eva, 1, numel(eva));
     end;
+    if ~isempty(eva_c) && numel(eva_c) ~= length(eva_c)
+        eva_c = reshape(eva_c, 1, numel(eva_c));
+    end;
 
     if size(eva, 1) ~= 1
         eva = eva';
+    end;
+    if ~isempty(eva_c) && size(eva_c, 1) ~= 1
+        eva_c = eva_c';
     end;
 end;
 
@@ -54,6 +65,16 @@ if ~config
     pairs = [1:length(pop); eva]';
     save([dir 'fitness.dat'], 'pairs', '-ASCII');
     clearvars pairs
+    
+    if ~isempty(eva_c)
+        pairs_c = [1:length(pop); eva_c]';
+        [tmp_val, pos] = max(pairs_c(:,2));
+        pairs_c(pos,:) = pairs_c(1,:);
+        pairs_c(1, :) = [pos tmp_val];
+        
+        save([dir 'fitness_conv.dat'], 'pairs_c', '-ASCII');
+        clearvars pairs_c
+    end;
 
     % Save all array arrangements
     for i=1:length(pop)

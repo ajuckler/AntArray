@@ -186,6 +186,7 @@ try
         v_dim = pop_sz/trn_sz;
         pop = reshape(pop, [trn_sz, v_dim]);
         eva = zeros(trn_sz, v_dim);
+        eva_c = eva;
 
         dial.setMainString('Initial population generated');
         dial.terminate();
@@ -196,10 +197,12 @@ try
         parfor i=1:v_dim
             pop_ln = pop(:, i);
             eva_ln = eva(:, i);
+            eva_c_ln = eva_c(:, i);
             for j=1:trn_sz
-                eva_ln(j) = fitness(pop_ln{j}, dist, mode);
+                [eva_ln(j) eva_c_ln(j)] = fitness(pop_ln{j}, dist, mode);
             end;
             eva(:, i) = eva_ln;
+            eva_c(:, i) = eva_c_ln;
         end;
 
         dial.terminate();
@@ -208,12 +211,13 @@ try
         iter = 1;
         off = 0;
         progress_data = zeros(max_iter+1, 2);
+        progress_data_conv = progress_data;
         
         cfg = [cfg mode quant dist];
         ant = AntArray(pop{1,1}.M, freq, [], elsp, [], 0);
         save_state(cfg);
         ant.saveCfg();
-        save_state(pop, eva, 0);
+        save_state(pop, eva, eva_c, 0);
         
         dial.setSubString('Initial data saved');
         dial.terminate();
@@ -260,6 +264,7 @@ try
         % ---------------------
         progress_data = zeros(max_iter+1, 2);
         iter = 1;
+        conv = 1;
         while exist([dir num2str(iter)], 'dir')
             if ~exist([dir num2str(iter) '/fitness.dat'], 'file')
                 break;
@@ -269,6 +274,12 @@ try
             progress_data(iter, 1) = fit(1,2);
             progress_data(iter, 2) = sum(fit(:,2))/size(fit,1);
             pop_sz = size(fit,1);
+            
+            if conv && exist([dir num2str(iter) '/fitness_conv.dat'], 'file')
+                fit_c = dlmread([dir num2str(iter) '/fitness_conv.dat']);
+            else
+                conv = 0;
+            end;
             
             iter = iter + 1;
         end;
@@ -303,6 +314,11 @@ try
         v_dim = pop_sz/trn_sz;
         pop = reshape(pop, [trn_sz, v_dim]);
         eva = reshape(fit(:,2), [trn_sz, v_dim]);
+        if conv
+            eva_c = reshape(fit_c(:,2), [trn_sz, v_dim]);
+        else
+            eva_c = [];
+        end;
         
         if mod(chrom_sz, 4) == 0 && quant
             chrom_sz = chrom_sz/4;
@@ -326,6 +342,13 @@ try
     
     % Store max & mean for progress tracking
     progress_data(iter, :) = [max(eva(:)) sum(sum(eva))/numel(eva)];
+    
+    if isempty(eva_c)
+        no_conv = 1;
+        eva_c = eva;
+    else
+        no_conv = 0;
+    end;
 
     condition = 0;
     while iter <= max_iter + off
@@ -342,11 +365,19 @@ try
             eva(i) = val;
             pop{pos+i-1} = temp_ind;
             eva(pos+i-1) = temp_val;
+            tmp_val = eva_c(i);
+            eva_c(i) = eva_c(pos+i-1);
+            eva_c(pos+i-1) = tmp_val;
         end;
-        fname = save_state(pop, eva, iter);
-
+        if no_conv
+            fname = save_state(pop, eva, iter);
+        else
+            fname = save_state(pop, eva, eva_c, iter);
+        end;
+        
         pop_tmp = pop;  % Tmp variable needed for parfor-loop
         eva_tmp = eva;
+        eva_c_tmp = eva_c;
         
         dial.terminate();
 
@@ -355,6 +386,8 @@ try
             % ---------
             inds = pop(:, i);
             vals = eva(:, i);
+            vals_c = eva_c(:, i);
+            
             for j=1:trn_sz
                 rand_index = trn_sz+j;
                 while rand_index == (i-1)*trn_sz+j
@@ -431,15 +464,17 @@ try
             for j=1:trn_sz
                 inds{j} = AntArray(chrom2mat(chroms{j}, quant), ...
                                     freq, [], elsp, [], 0);
-                vals(j) = fitness(inds{j}, dist, mode);
+                [vals(j), vals_c(j)] = fitness(inds{j}, dist, mode);
             end;
             eva_tmp(:, i) = vals;
             pop_tmp(:, i) = inds;
+            eva_c_tmp(:, i) = vals_c;
                 
         end;
 
         eva = eva_tmp;
         pop = pop_tmp;
+        eva_c = eva_c_tmp;
 
         iter = iter+1;
         
@@ -484,7 +519,11 @@ try
             end;
         end;
     end;
-    save_state(pop, eva, iter);
+    if no_conv
+        save_state(pop, eva, iter);
+    else
+        save_state(pop, eva, eva_c, iter);
+    end;
     dial.terminate();
     
     delete(dial);
