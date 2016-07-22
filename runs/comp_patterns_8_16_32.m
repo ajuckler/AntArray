@@ -6,7 +6,7 @@ for sz = [8 16 32]
     % Array containing the weights
     wArr = cell(round(sz/2),8);
     % Uniform
-    arr = AntArray(zeros(sz), 60500, [], 0.84);
+    arr = AntArray(zeros(sz), 60500, [], 0.84, [], 0);
     arr = arr.setName(['fullx_' mat2str(sz)]);
     arr = arr.setMax('XY', 30);
     arr = arr.setMax('YZ', 30);
@@ -37,7 +37,7 @@ for sz = [8 16 32]
     for rem_els=0:round(sz/4)-1
         disp(['Squares, iteration ' num2str(rem_els) ' of ' num2str(round(sz/4)-1)]);
         % Init
-        arr = AntArray(zeros(sz), 60500, [], 0.84);
+        arr = AntArray(zeros(sz), 60500, [], 0.84, [], 0);
         arr = arr.setName(['sq2_' mat2str(sz) '_' mat2str(rem_els)]);
         arr = arr.setMax('XY', 30);
         arr = arr.setMax('YZ', 30);
@@ -73,7 +73,7 @@ for sz = [8 16 32]
     for rem_els=0:round(sz/4)-1
         disp(['Triangles, iteration ' num2str(rem_els) ' of ' num2str(round(sz/4)-1)]);
         % Init
-        arr = AntArray(zeros(sz), 60500, [], 0.84);
+        arr = AntArray(zeros(sz), 60500, [], 0.84, [], 0);
         arr = arr.setName(['tr_' num2str(sz) '_' num2str(rem_els)]);
         arr = arr.setMax('XY', 30);
         arr = arr.setMax('YZ', 30);
@@ -109,7 +109,7 @@ for sz = [8 16 32]
     for rem_els=0:round(sz/4)-1
         disp(['Triangles 2, iteration ' num2str(rem_els) ' of ' num2str(round(sz/4)-1)]);
         % Init
-        arr = AntArray(zeros(sz), 60500, [], 0.84);
+        arr = AntArray(zeros(sz), 60500, [], 0.84, [], 0);
         arr = arr.setName(['tr2_' num2str(sz) '_' num2str(rem_els)]);
         arr = arr.setMax('XY', 30);
         arr = arr.setMax('YZ', 30);
@@ -142,7 +142,7 @@ for sz = [8 16 32]
     for rem_els=0:last_it
         disp(['Circles, iteration ' num2str(rem_els) ' of ' num2str(last_it)]);
         % Init
-        arr = AntArray(zeros(sz), 60500, [], 0.84);
+        arr = AntArray(zeros(sz), 60500, [], 0.84, [], 0);
         arr = arr.setName(['circ_' num2str(sz) '_' num2str(rem_els)]);
         arr = arr.setMax('XY', 30);
         arr = arr.setMax('YZ', 30);

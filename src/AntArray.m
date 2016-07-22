@@ -1543,6 +1543,7 @@ classdef AntArray
             
             xlim([-1 length(obj.M)+1]);
             ylim([-1 length(obj.M)+1]);
+            set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
             
             text(0, -length(obj.M)*0.03, ...
                 [mat2str(length(obj.M)) 'x' mat2str(length(obj.M))], ...
@@ -1563,7 +1564,6 @@ classdef AntArray
             
             title('\textbf{Array arrangement}', ...
                 'Interpreter', 'latex', 'FontSize', 24);
-            set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
             axis off;
             
             if ~strcmp(obj.comments, '')

@@ -3,7 +3,7 @@ clear
 parallel_pool('start');
 
 % Array containing the weights
-wArr = zeros(32,1);
+wArr = zeros(32,8);
 
 fsize = 64;
 % Uniform
@@ -140,7 +140,7 @@ for rem_els=0:31
     arr.plotAntArray();
     arr = arr.genPattern(11000, 3000, 'XY', 30);
     arr = arr.genPattern([], [], 'XY-BW');
-    wArr(rem_els+1,1) = arr.weight('XY');
+    wArr(rem_els+1,8) = arr.weight('XY');
     arr = arr.E_strength(15000, 0, 0, 500);
     arr = arr.genPattern([1 2:2:10]*1000, 3000, 'YZ', 30);
     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
