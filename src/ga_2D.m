@@ -439,9 +439,46 @@ try
 
             % Mutation
             % --------
+%             for j=1:trn_sz
+%                 mask = rand(chrom_sz);
+%                 mask = (mask <= mut_prob);
+%                 mut_chrom = chroms{j};
+%                 mut_chrom(mask == 1) = ...
+%                     abs(mut_chrom(mask == 1) - 1);
+%                 chroms{j} = mut_chrom;
+%             end;
             for j=1:trn_sz
                 mask = rand(chrom_sz);
                 mask = (mask <= mut_prob);
+                tot_els = numel(find(mask));
+                if tot_els > 1
+                    nb_els = tot_els;
+                    mask = zeros(chrom_sz);
+                    while nb_els > 0
+                        tpmask = zeros(chrom_sz);
+                        % Gen start pos
+                        xpos = randi([1 chrom_sz]);
+                        ypos = randi([1 chrom_sz]);
+
+                        % Gen height
+                        maxh = min(nb_els, chrom_sz-ypos+1);
+                        height = randi([1 maxh]);
+
+                        % Gen width
+                        maxw = min(floor(nb_els/height), chrom_sz-xpos+1);
+                        width = randi([1 maxw]);
+
+                        % Rotate
+                        tpmask(ypos:ypos+height-1, xpos:xpos+width-1) = 1;
+                        if rand < .5
+                            tpmask = tpmask';
+                        end;
+
+                        % Adapt
+                        mask(tpmask == 1) = 1;
+                        nb_els = tot_els - numel(find(mask));
+                    end;
+                end                  
                 mut_chrom = chroms{j};
                 mut_chrom(mask == 1) = ...
                     abs(mut_chrom(mask == 1) - 1);
