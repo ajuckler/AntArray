@@ -65,7 +65,7 @@ end;
 % Triangles
 for rem_els=0:15
     disp(['Triangles, iteration ' num2str(rem_els) ' of 15']);
-    Init
+    % Init
     arr = AntArray(zeros(fsize), 60500, [], 0.84, [], 0);
     arr = arr.setName(['tr_' num2str(rem_els)]);
     arr = arr.setMax('XY', 30);
@@ -119,7 +119,7 @@ for rem_els=0:15
     arr = arr.genPattern([1 2:2:10]*1000, [], 'YZ-BW');
 end;
 
-Circles
+% Circles
 for rem_els=0:31
     disp(['Circles, iteration ' num2str(rem_els) ' of 31']);
     % Init
@@ -148,6 +148,6 @@ for rem_els=0:31
     arr = arr.genPattern(10*1000, [], 'YZ-BW');
 end;
 
-export_dat(wArr, ['weights_' datestr(now, 'YYYYMMDD')]);
+export_dat(wArr, ['weights_' datestr(now, 'yyyymmdd')]);
 
 parallel_pool('stop');

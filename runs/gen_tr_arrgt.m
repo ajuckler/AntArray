@@ -41,10 +41,12 @@ function arr = gen_tr_arrgt(dim, mode, rem)
     end;
 
     k_max = ceil(rem_els*tan(pi/3));
-    for k=2:min(k_max, dim-h)
+    for k=2:k_max
         for i=1:h
             x = dim/2 - round((i-1)*tan(pi/6));
-            arr(i+k-1, x) = 1;
+            if i+k-1 < h
+                arr(i+k-1, x) = 1;
+            end;
         end;
     end;
 
