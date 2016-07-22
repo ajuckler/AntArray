@@ -971,7 +971,7 @@ classdef AntArray
         
             % Plot
             waitbar(1, progress, 'Generating plots...');
-            fig = figure();
+            fig = figure('Visible', 'off');
             semilogx(absc, oord, 'LineWidth', 2);
             xlim([absc(1) absc(end)]);
             hold on;
@@ -1292,7 +1292,7 @@ classdef AntArray
                 [range_y range_y(end)+ss_y*fact_y]);  % Larger to be able to plot evth
 
             % Plot field
-            figure(1);
+            figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
                 'LineStyle', 'none');
             view(2);
@@ -1424,7 +1424,7 @@ classdef AntArray
             
             % ========================================================================
             % Plot
-            figure(1);
+            figure('Visible', 'off');
             plot(-90:5:90, D, 'LineWidth', 2);
             hold on
             
@@ -1473,7 +1473,7 @@ classdef AntArray
             
             % ========================================================================
             % Plot
-            figure(1);
+            figure('Visible', 'off');
             plot(-90:5:90, D, 'LineWidth', 2);
             hold on
             
@@ -1520,7 +1520,7 @@ classdef AntArray
                 error('No antenna element was initiated');
             end;
             
-            fig = figure();
+            fig = figure('Visible', 'off');
             hold on;
             if length(obj.M) <= 16
                 msize = 7;
@@ -1759,7 +1759,7 @@ classdef AntArray
             [absc, oord] = meshgrid([range range(end)+ss*fact]);  % Larger to be able to plot evth
 
             % Plot field
-            fig = figure(1);
+            fig = figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
                 'LineStyle', 'none');
             view(2);
@@ -1965,7 +1965,7 @@ classdef AntArray
             [absc, oord] = meshgrid([range range(end)+ss*fact]);  % Larger to be able to plot evth
 
             % Plot field
-            fig = figure(1);
+            fig = figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
                 'LineStyle', 'none');
             view(2);
@@ -2115,7 +2115,7 @@ classdef AntArray
                 [range_y range_y(end)+ss_y*fact_y]);  % Larger to be able to plot evth
 
             % Plot field
-            figure(1);
+            figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
                 'LineStyle', 'none');
             view(2);
@@ -2332,7 +2332,7 @@ classdef AntArray
                 [range_d range_d(end)+ss*fact_d]);  % Larger to be able to plot evth
 
             % Plot field
-            figure(1);
+            figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none');
             view(2);
             colormap jet;
@@ -2519,7 +2519,7 @@ classdef AntArray
                 [range_d range_d(end)+ss*fact_d]);  % Larger to be able to plot evth
 
             % Plot field
-            figure(1);
+            figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none');
             view(2);
             colormap jet;

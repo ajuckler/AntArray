@@ -69,7 +69,8 @@ if ~config
     if ~isempty(eva_c)
         pairs_c = [1:length(pop); eva_c]';
         [tmp_val, pos] = max(pairs_c(:,2));
-        pairs_c(pos,:) = pairs_c(1,:);
+        pairs_c(pos,:) = pairs_c(2,:);
+        pairs_c(2, :) = pairs_c(1, :);
         pairs_c(1, :) = [pos tmp_val];
         
         save([dir 'fitness_conv.dat'], 'pairs_c', '-ASCII');
