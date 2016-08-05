@@ -4,7 +4,7 @@ if nargin < 1 || isempty(nb)
 end
 if nb == 64 && (nargin < 2 || isempty(model))
     model = 1;
-else
+elseif ~isempty(model)
     model = model > 0;
 end;
 
@@ -15,7 +15,7 @@ if nb == 64
         rem = [9 9 9 22];
     end;
 elseif nb == 32
-    rem = [0 2 5 8];
+    rem = [0 4 5 8];
 elseif nb == 16
     rem = [0 0 0 0];
 elseif nb == 8
