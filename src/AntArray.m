@@ -190,7 +190,7 @@ classdef AntArray
             obj.min_E_str = 0;
             obj.normalized = 0;
             obj.pwr = 10*10^-3;
-            obj.weight_ang = pi/18; % 10Â°
+            obj.weight_ang = pi/18; % 10°
             
             obj.dire = zeros(length(M));
             obj.dire(M~=0) = 1;
@@ -1506,13 +1506,13 @@ classdef AntArray
             %
             % See also SETCOMMENTS ADAPTARRAY RSTARRAY
             
-            if nargin < 2 || cont < 1
+            if nargin < 2 || isempty(cont)
                 cont = 0;
             else
-                cont = 1;
+                cont = cont > 0;
             end;
             
-            colors = {'m', 'c', 'r', 'g', 'b', 'k'};
+            colors = {'m', 'c', 'r', 'b', 'g', 'k'};
             markers = {'o', '+', 'x', 's', 'd'};
             
             maxval = max(max(obj.dire));
@@ -1523,7 +1523,7 @@ classdef AntArray
             fig = figure('Visible', 'off');
             hold on;
             if length(obj.M) <= 16
-                msize = 7;
+                msize = 8;
             else
                 msize = 5;
             end;
@@ -1764,6 +1764,7 @@ classdef AntArray
                 'LineStyle', 'none');
             view(2);
             hold on;
+            box on;
             colormap jet;
             cbar_h = colorbar('eastoutside');
             
@@ -1812,6 +1813,7 @@ classdef AntArray
 
             xlim([range(1), range(end)+ss*fact]);
             ylim([range(1), range(end)+ss*fact]);
+            shading(get(fig, 'CurrentAxes'), 'flat');
             set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
             set(get(fig, 'CurrentAxes'), 'XTick', spe_ticks_pos, ...
                 'XTickLabel', spe_ticks);
@@ -1837,7 +1839,7 @@ classdef AntArray
             set(get(fig, 'CurrentAxes'), 'FontSize', 16);
 
             savname = ['pattern' obj.name '_' mat2str(d)];
-            print_plots(gcf, savname);
+            print_plots(fig, savname);
             export_dat([0 absc(1,:)./fact; oord(:,1)./fact plotdata], savname);
             
             if obj.dispwait
@@ -2021,6 +2023,7 @@ classdef AntArray
                 'XTickLabel', spe_ticks);
             set(get(fig, 'CurrentAxes'), 'YTick', spe_ticks_pos, ...
                 'YTickLabel', spe_ticks);
+            shading(get(fig, 'CurrentAxes'), 'flat');
             set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
 
             % Set labels and title
@@ -2040,9 +2043,9 @@ classdef AntArray
             ylabel(['${\rm z}_{\rm pos}$ [' unit ']'], ...
                 'Interpreter', 'latex', 'FontSize', 22);
             set(get(fig, 'CurrentAxes'), 'FontSize', 16);
-
+            
             savname = ['pattern' obj.name '_' mat2str(d) '_main'];
-            print_plots(gcf, savname);
+            print_plots(fig, savname);
             export_dat([0 absc(1,:)./fact; oord(:,1)./fact plotdata], savname);
 
             close all
@@ -2115,7 +2118,7 @@ classdef AntArray
                 [range_y range_y(end)+ss_y*fact_y]);  % Larger to be able to plot evth
 
             % Plot field
-            figure('Visible', 'off');
+            fig = figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none', ...
                 'LineStyle', 'none');
             view(2);
@@ -2188,11 +2191,17 @@ classdef AntArray
                 title(['\textbf{Electric field at ', mat2str(d), 'm}'], ...
                     'Interpreter', 'latex', 'FontSize', 24);
             elseif ~isempty(theta)
-                title(['\textbf{Electric field at $\theta=\pi\cdot' ...
+%                 title(['\textbf{Electric field at $\theta=\pi\cdot' ...
+%                 rats(theta/pi) '$}'], ...
+%                 'Interpreter', 'latex', 'FontSize', 24);
+                title(['\textbf{$\theta=\pi\cdot' ...
                 rats(theta/pi) '$}'], ...
                 'Interpreter', 'latex', 'FontSize', 24);
+
             else
-                title('\textbf{Electric field in the XY plane}', ...
+%                 title('\textbf{Electric field in the XY plane}', ...
+%                     'Interpreter', 'latex', 'FontSize', 24);
+                title('\textbf{XY}', ...
                     'Interpreter', 'latex', 'FontSize', 24);
             end;
             
@@ -2217,17 +2226,23 @@ classdef AntArray
                     'Interpreter', 'latex', 'FontSize', 22);
                 ylabel(['${\rm z}_{\rm pos}$ [' unit_y ']'], ...
                     'Interpreter', 'latex', 'FontSize', 22);
+                set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
             elseif ~isempty(theta)
                 xlabel(['Distance to the array centre [' unit_x ']'], 'Interpreter', ...
                     'latex', 'FontSize', 22);
                 ylabel(['${\rm x}_{\rm pos}$ [' unit_y ']'], 'Interpreter', ...
                     'latex', 'FontSize', 22);
+                set(get(fig, 'CurrentAxes'), ...
+                    'PlotBoxAspectRatio', [2*x_dev(end) y_dev(end) 1]);
             else
                 xlabel(['${\rm y}_{\rm pos}$ [' unit_x ']'], ...
                     'Interpreter', 'latex', 'FontSize', 22);
                 ylabel(['${\rm x}_{\rm pos}$ [' unit_y ']'], ...
                     'Interpreter', 'latex', 'FontSize', 22);
+                set(get(fig, 'CurrentAxes'), ...
+                    'PlotBoxAspectRatio', [2*x_dev(end) y_dev(end) 1]);
             end;
+            shading(get(fig, 'CurrentAxes'), 'flat');
             set(gca, 'FontSize', 16);
             
             print_plots(gcf, [savname '_BW']);
@@ -2332,7 +2347,7 @@ classdef AntArray
                 [range_d range_d(end)+ss*fact_d]);  % Larger to be able to plot evth
 
             % Plot field
-            figure('Visible', 'off');
+            fig = figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none');
             view(2);
             colormap jet;
@@ -2390,8 +2405,10 @@ classdef AntArray
                 'YTickLabel', spe_ticks_d);
 
             % Set labels and title
-            title('\textbf{Electric field in the XY plane}', ...
-                'Interpreter', 'latex', 'FontSize', 24);
+%             title('\textbf{Electric field in the XY plane}', ...
+%                 'Interpreter', 'latex', 'FontSize', 24);
+            title('\textbf{XY}', 'Interpreter', 'latex', ...
+                'FontSize', 24);
 
             switch fact_L
                 case 1000
@@ -2413,10 +2430,14 @@ classdef AntArray
                 'latex', 'FontSize', 22);
             ylabel(['${\rm x}_{\rm pos}$ [' unit_d ']'], 'Interpreter', ...
                 'latex', 'FontSize', 22);
-            set(gca, 'FontSize', 16);
+            set(get(fig, 'CurrentAxes'), 'FontSize', 16);
+            
+            shading(get(fig, 'CurrentAxes'), 'flat');
+            set(get(fig, 'CurrentAxes'), ...
+                'PlotBoxAspectRatio', [(dim1-1)*ss (dim2-1)*ss 1]);
 
             savname = ['pattern_XY' obj.name];
-            print_plots(gcf, savname);
+            print_plots(fig, savname);
             export_dat([0 absc(1,:)./fact_L; oord(:,1)./fact_d plotdata], savname);
             
             delete(progress);
@@ -2519,7 +2540,7 @@ classdef AntArray
                 [range_d range_d(end)+ss*fact_d]);  % Larger to be able to plot evth
 
             % Plot field
-            figure('Visible', 'off');
+            fig = figure('Visible', 'off');
             surf(absc, oord, plotdata, 'EdgeColor', 'none');
             view(2);
             colormap jet;
@@ -2577,8 +2598,15 @@ classdef AntArray
                 'YTickLabel', spe_ticks_d);
 
             % Set labels and title
-            title(['\textbf{Electric field at $\theta=\pi\cdot' ...
-                rats(theta/pi) '$}'], ...
+%             title(['\textbf{Electric field at $\theta=\pi\cdot' ...
+%                 rats(theta/pi) '$}'], ...
+%                 'Interpreter', 'latex', 'FontSize', 24);
+            if theta == 0
+                titletext = num2str(0);
+            else
+                titletext = ['\pi\cdot' rats(theta/pi)];
+            end;
+            title(['\textbf{$\theta = ' titletext '$}'], ...
                 'Interpreter', 'latex', 'FontSize', 24);
 
             switch fact_L
@@ -2597,14 +2625,20 @@ classdef AntArray
                 otherwise
                     unit_d = 'm';
             end;
-            xlabel(['Distance to the array centre [' unit_L ']'], 'Interpreter', ...
+%             xlabel(['Distance to the array centre [' unit_L ']'], 'Interpreter', ...
+%                 'latex', 'FontSize', 22);
+            xlabel(['Distance to the centre [' unit_L ']'], 'Interpreter', ...
                 'latex', 'FontSize', 22);
             ylabel(['${\rm x}_{\rm pos}$ [' unit_d ']'], 'Interpreter', ...
                 'latex', 'FontSize', 22);
-            set(gca, 'FontSize', 16);
+            set(get(fig, 'CurrentAxes'), 'FontSize', 16);
+            
+            shading(get(fig, 'CurrentAxes'), 'flat');
+            set(get(fig, 'CurrentAxes'), ...
+                'PlotBoxAspectRatio', [(dim1-1)*ss (dim2-1)*ss 1]);
 
             savname = ['pattern_theta_' mat2str(theta, 3) obj.name];
-            print_plots(gcf, savname);
+            print_plots(fig, savname);
             export_dat([0 absc(1,:)./fact_L; oord(:,1)./fact_d plotdata], savname);
             
             delete(progress);
@@ -2928,6 +2962,11 @@ classdef AntArray
         function filename = openFile(savname)
             attempts = 30;
             
+            if exist(['dat/' savname '.dat'], 'file')
+                filename = ['dat/' savname '.dat'];
+                return;
+            end;
+            
             date_n = datenum(date);
             date_v = datevec(date_n);
             dirpath = cell(1,3);
@@ -2960,6 +2999,9 @@ classdef AntArray
                 filename = [dirpath '/' savname '.dat'];
             end;
             
+            if attempts ~= 0
+                return;
+            end;
             if attempts == 0
                 warning('MyWARN:file_not_found', ...
                     ['File ' savname ' not found, skipped']);

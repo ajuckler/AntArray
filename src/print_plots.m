@@ -21,9 +21,9 @@ function print_plots(h, path) % h must be gcf from plot
     set(h,'PaperPosition',[0.25 0.25 28.41 19.72]);	%this is for A4
     
     if verLessThan('matlab','8.4')
-        print([dirpath '/' path '.pdf'], '-dpdf', '-painters');
+        print(h, [dirpath '/' path '.pdf'], '-dpdf', '-painters');
     else
-        print([dirpath '/' path '.pdf'], '-dpdf', '-opengl', '-r300');
+        print(h, [dirpath '/' path '.pdf'], '-dpdf', '-opengl', '-r300');
     end
     
     
