@@ -489,6 +489,18 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
         label = 'Fitness [$m^2$]';
     end;
     ylabel(label, 'Interpreter', 'latex', 'FontSize', 22);
+    
+    % Adapt ticks
+    ax = get(fig, 'CurrentAxes');
+    ticks = get(ax, 'XTick');
+    ticklabels = get(ax, 'XTickLabel');
+    pos = 1:length(ticks);
+    pos = pos(ticks == round(ticks));
+    ticks = ticks(pos);
+    ticklabels = ticklabels(pos);
+    set(ax, 'XTick', ticks);
+    set(ax, 'XTickLabel', ticklabels);
+    
     set(get(fig, 'CurrentAxes'), 'FontSize', 16);
     hold off;
 
@@ -567,33 +579,6 @@ function skip = knownNeighbour(visited_list, tmp_chrom)
             break;
         end;
     end;
-end
-
-function mask = genMask(chrom)
-    dim = sqrt(length(chrom));
-    mat = reshape(chrom, dim, dim);
-    mask = mat;
-
-    for i=1:dim
-        for j=1:dim
-            if mat(i,j)
-                if i > 1
-                    mask(i-1,j) = 1;
-                end;
-                if i < dim
-                    mask(i+1,j) = 1;
-                end;
-                if j > 1
-                    mask(i,j-1) = 1;
-                end;
-                if j < dim
-                    mask(i,j+1) = 1;
-                end;
-            end;
-        end;
-    end;
-
-    mask = reshape(mask, 1, numel(mask));
 end
 
 function pairs = genPairs(chrom)
