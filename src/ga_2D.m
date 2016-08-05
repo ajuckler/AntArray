@@ -6,7 +6,7 @@
 %                               AntArray default
 %       if ~QUANT:              1/2 of matrix size in START_POP or of 
 %                               AntArray default
-%   population size:            50
+%   population size:            70
 %   tournament participants:    2
 %   chromosomes passed through: 2
 %   mutation probability:       0.001 bits
@@ -63,7 +63,7 @@ optim_val = -1;
 chrom_sz = [];      % chromosome size
                     %   empty = 1/4 of start_pop or of AntArray default
 
-pop_sz = 50;        % population size
+pop_sz = 70;        % population size
 trn_sz = 2;         % tournament selection size
 fit_sz = trn_sz;    % number of elements passed through
                     %   must be a multiple of trn_sz
@@ -127,6 +127,8 @@ try
             elseif isa(start_pop, 'numeric')
                 if mod(start_pop, 2)
                     error('START_POP should be an even number');
+                elseif start_pop > 64
+                    error(['Array dimensions too high: ' num2str(start_pop)]);
                 else
                     chrom_sz = start_pop;
                 end;
@@ -199,7 +201,7 @@ try
             eva_ln = eva(:, i);
             eva_c_ln = eva_c(:, i);
             for j=1:trn_sz
-                [eva_ln(j) eva_c_ln(j)] = fitness(pop_ln{j}, dist, mode);
+                [eva_ln(j), eva_c_ln(j)] = fitness(pop_ln{j}, dist, mode);
             end;
             eva(:, i) = eva_ln;
             eva_c(:, i) = eva_c_ln;
@@ -389,7 +391,7 @@ try
             vals_c = eva_c(:, i);
             
             for j=1:trn_sz
-                rand_index = trn_sz+j;
+                rand_index = randi(pop_sz, 1);
                 while rand_index == (i-1)*trn_sz+j
                     rand_index = randi(pop_sz, 1);
                 end;
@@ -448,42 +450,52 @@ try
 %                 chroms{j} = mut_chrom;
 %             end;
             for j=1:trn_sz
-                mask = rand(chrom_sz);
-                mask = (mask <= mut_prob);
-                tot_els = numel(find(mask));
-                if tot_els > 1
-                    nb_els = tot_els;
-                    mask = zeros(chrom_sz);
-                    while nb_els > 0
-                        tpmask = zeros(chrom_sz);
-                        % Gen start pos
-                        xpos = randi([1 chrom_sz]);
-                        ypos = randi([1 chrom_sz]);
-
-                        % Gen height
-                        maxh = min(nb_els, chrom_sz-ypos+1);
-                        height = randi([1 maxh]);
-
-                        % Gen width
-                        maxw = min(floor(nb_els/height), chrom_sz-xpos+1);
-                        width = randi([1 maxw]);
-
-                        % Rotate
-                        tpmask(ypos:ypos+height-1, xpos:xpos+width-1) = 1;
-                        if rand < .5
-                            tpmask = tpmask';
-                        end;
-
-                        % Adapt
-                        mask(tpmask == 1) = 1;
-                        nb_els = tot_els - numel(find(mask));
-                    end;
-                end                  
+                mask = genMask(chroms{j}, round(chrom_sz/16));
+                mask2 = rand(1, numel(mask(mask == 1)));
+                mask2 = (mask2 <= mut_prob);
+                mask(mask == 1) = mask2;
                 mut_chrom = chroms{j};
                 mut_chrom(mask == 1) = ...
                     abs(mut_chrom(mask == 1) - 1);
                 chroms{j} = mut_chrom;
             end;
+%             for j=1:trn_sz
+%                 mask = rand(chrom_sz);
+%                 mask = (mask <= mut_prob);
+%                 tot_els = numel(find(mask));
+%                 if tot_els > 1
+%                     nb_els = tot_els;
+%                     mask = zeros(chrom_sz);
+%                     while nb_els > 0
+%                         tpmask = zeros(chrom_sz);
+%                         % Gen start pos
+%                         xpos = randi([1 chrom_sz]);
+%                         ypos = randi([1 chrom_sz]);
+% 
+%                         % Gen height
+%                         maxh = min(nb_els, chrom_sz-ypos+1);
+%                         height = randi([1 maxh]);
+% 
+%                         % Gen width
+%                         maxw = min(floor(nb_els/height), chrom_sz-xpos+1);
+%                         width = randi([1 maxw]);
+% 
+%                         % Rotate
+%                         tpmask(ypos:ypos+height-1, xpos:xpos+width-1) = 1;
+%                         if rand < .5
+%                             tpmask = tpmask';
+%                         end;
+% 
+%                         % Adapt
+%                         mask(tpmask == 1) = 1;
+%                         nb_els = tot_els - numel(find(mask));
+%                     end;
+%                 end                  
+%                 mut_chrom = chroms{j};
+%                 mut_chrom(mask == 1) = ...
+%                     abs(mut_chrom(mask == 1) - 1);
+%                 chroms{j} = mut_chrom;
+%             end;
 %             if rand <= mut_prob
 %                 pos = randi(chrom_sz*chrom_sz, 1);  % Mutation position
 %                 chrom_nb = randi([1 trn_sz], 1);    % Affected chromosome
