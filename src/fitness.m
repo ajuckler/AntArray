@@ -1,6 +1,6 @@
 %FITNESS Compute the fitness based on the beam volume
 %
-%   This function is used by GA_2D to associate a fitness on each array
+%   This function is used by GA_2D to associate a fitness to each array
 %   arrangement. 
 %   The way of computing the fitness depends on the MODE parameter:
 %   For MODE = 0:   The fitness is equal to the volume of the beam that is
@@ -36,6 +36,13 @@ function [weight weight_alt] = fitness(ant, dist, mode)
     counter_th = 1;
     step = 30;
     const = step*step/1000/1000; % converted to m²
+    
+    mat = ant.M;
+    if numel(mat(mat == 0)) == numel(mat)
+        weight = 0;
+        weight_alt = 0;
+        return;
+    end;
     
     ant = ant.waitbars(0);
     
