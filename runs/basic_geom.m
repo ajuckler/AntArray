@@ -77,6 +77,10 @@ function basic_geom(name)
         error 'Unknown option';
     end;
     ant.plotAntArray();
-    ant.genPattern(5000, 3000, 'YZ', 15);
-
+    ant = ant.genPattern(5000, 3000, 'YZ', 15);
+    ant = ant.genPattern(5000, 3000, 'YZ-BW', 15);
+    ant = ant.genPattern(10000, 3000, 'XY', 30);
+    ant = ant.genPattern(10000, 3000, 'XY-BW', 30);
+    ant = ant.genPattern(10000, 3000, 'theta', 30, pi/4);
+    ant = ant.genPattern(10000, 3000, 'theta-BW', 30, pi/4);
 end

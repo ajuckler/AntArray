@@ -26,7 +26,7 @@
 
 %   Copyright 2016, Antoine Juckler. All rights reserved.
 
-function [weight weight_alt] = fitness(ant, dist, mode)
+function [weight, weight_alt] = fitness(ant, dist, mode)
     if nargin < 3
         mode = 0;
     else

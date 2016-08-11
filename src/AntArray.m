@@ -1054,7 +1054,7 @@ classdef AntArray
             % Adapt title and axes
             title(['\textbf{Field strength along (' mat2str(z) ', ' ...
                 mat2str(y) ')}'], 'Interpreter', 'latex', 'FontSize', 24);
-            xlabel('Distance to the array centre [mm]', ...
+            xlabel('Distance to the centre [mm]', ...
                 'Interpreter', 'latex', 'FontSize', 22);
             ylabel('Field strength [dB\,V/m]', ...
                 'Interpreter', 'latex', 'FontSize', 22);
@@ -1372,7 +1372,7 @@ classdef AntArray
                 ylabel(['${\rm z}_{\rm pos}$ [' unit_y ']'], ...
                     'Interpreter', 'latex', 'FontSize', 22);
             elseif mode == 0 && ~isempty(d)
-                xlabel(['Distance to the array centre [' unit_x ']'], 'Interpreter', ...
+                xlabel(['Distance to the centre [' unit_x ']'], 'Interpreter', ...
                     'latex', 'FontSize', 22);
                 ylabel(['${\rm x}_{\rm pos}$ [' unit_y ']'], 'Interpreter', ...
                     'latex', 'FontSize', 22);
@@ -2124,10 +2124,10 @@ classdef AntArray
             view(2);
             hold on;
             colormap gray;
-            colorbar('eastoutside');
-
-            % Adapt color map
-            caxis([0 1]);
+%             colorbar('eastoutside');
+% 
+%             % Adapt color map
+%             caxis([0 1]);
             
             % If YZ, plot antenna
             if ~isempty(d)
@@ -2178,7 +2178,7 @@ classdef AntArray
                 spe_ticks_y(ii) = range_y(1) + (ii-1)*2*y_dev(end)*fact_y/tick_fact_y;
             end;
             spe_ticks_pos_y = spe_ticks_y+ss_y*fact_y/2;
-
+            
             xlim([range_x(1), range_x(end)+ss_x*fact_x]);
             ylim([range_y(1), range_y(end)+ss_y*fact_y]);
             set(gca, 'XTick', spe_ticks_pos_x, ...
@@ -2228,7 +2228,9 @@ classdef AntArray
                     'Interpreter', 'latex', 'FontSize', 22);
                 set(get(fig, 'CurrentAxes'), 'PlotBoxAspectRatio', [1 1 1]);
             elseif ~isempty(theta)
-                xlabel(['Distance to the array centre [' unit_x ']'], 'Interpreter', ...
+%                 xlabel(['Distance to the centre [' unit_x ']'], 'Interpreter', ...
+%                     'latex', 'FontSize', 22);
+                xlabel(['$\rm d_{\rm centre}$ [' unit_x ']'], 'Interpreter', ...
                     'latex', 'FontSize', 22);
                 ylabel(['${\rm x}_{\rm pos}$ [' unit_y ']'], 'Interpreter', ...
                     'latex', 'FontSize', 22);
@@ -2243,6 +2245,22 @@ classdef AntArray
                     'PlotBoxAspectRatio', [2*x_dev(end) y_dev(end) 1]);
             end;
             shading(get(fig, 'CurrentAxes'), 'flat');
+            
+            % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % DELETE THIS PART
+            % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if ~isempty(theta) || isempty(d)
+                ax = get(fig, 'CurrentAxes');
+                xlims = get(ax, 'XLim');
+                ylims = get(ax, 'YLim');
+                set(ax, 'YTick', [ylims(1) ylims(end)/2 ylims(end)], ...
+                    'YTickLabel', [0 round(ylims(end))/2 round(ylims(end))]);
+                set(ax, 'XTick', [xlims(1) (xlims(end)+xlims(1))/2 xlims(end)], ...
+                    'XTickLabel', [xlims(1) 0 -xlims(1)]);
+            end;
+            % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % END
+            % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             set(gca, 'FontSize', 16);
             
             print_plots(gcf, [savname '_BW']);
@@ -2625,8 +2643,6 @@ classdef AntArray
                 otherwise
                     unit_d = 'm';
             end;
-%             xlabel(['Distance to the array centre [' unit_L ']'], 'Interpreter', ...
-%                 'latex', 'FontSize', 22);
             xlabel(['Distance to the centre [' unit_L ']'], 'Interpreter', ...
                 'latex', 'FontSize', 22);
             ylabel(['${\rm x}_{\rm pos}$ [' unit_d ']'], 'Interpreter', ...

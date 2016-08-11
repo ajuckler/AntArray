@@ -4,6 +4,7 @@ run2.m
 *_dev.m
 *_back.m
 *_old.m
+*_backup.m
 *.asv
 *.lnk
 *.xls*

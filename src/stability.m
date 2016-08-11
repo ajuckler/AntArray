@@ -32,7 +32,7 @@ else
     mode = (mode > 0);
 end;
 
-max_iter = 5;
+max_iter = 100;
 
 % Start parallel pool
 parallel_pool('start');

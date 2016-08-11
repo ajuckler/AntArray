@@ -87,7 +87,9 @@ function convertFitness(inname, dist, inmode, evth)
     if evth && kk == -1
         dirprefix = datestr(now, 'yyyymmdd');
         dirname = [dirprefix '/' dirname];
-        mkdir(dirname);
+        if ~exist(dirname, 'dir')
+            mkdir(dirname);
+        end;
         newdata = convertFromFile(GA_fold, cfg_path, dirname);
     else
         % Open files
@@ -276,10 +278,12 @@ function newdata = convertFromFile(GA_fold, cfg_path, dirname)
     newdata = zeros(3, it);
     for i=1:it
         fit = dlmread([GA_fold '/' num2str(i-1) '/fitness_conv.dat']);
-        newdata(:, i) = [fit(1,2) sum(fit(:,2))/length(fit) fit(2,2)];
+        newdata(:, i) = [fit(2,2) sum(fit(:,2))/length(fit) max(fit(:,2))];
         
         subdir = [dirname '/' num2str(i) '/'];
-        mkdir(subdir);
+        if ~exist(subdir, 'dir')
+            mkdir(subdir);
+        end;
         arrgt1 = AntArray([GA_fold '/' num2str(i-1) ...
             '/arrangement_1.dat'], [], [], [], cfg_path, 0).M;
         arrgt2 = AntArray([GA_fold '/' num2str(i-1) ...
