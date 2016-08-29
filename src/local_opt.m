@@ -2,16 +2,18 @@
 %
 %   The behaviour of the algorithm is determined by 2 hard-coded
 %   parameters:
-%       dist_prob:  distortion probability
+%       dist_prob:  distortion probability (0.01)
 %       th_prob:    remaining probability of finding a better solution
-%   The inputted arrangement is distorted before the algorithm is applied
-%   to it, so that if the arrangement is the optimum we get it back as
+%                   (0.03)
+%   The input arrangement is distorted before the algorithm is applied to
+%   it, so that if the arrangement is the optimum we get it back as
 %   function output.
 %   The other probability is used to discard several neighbours when the
 %   probability of finding a better solution in the remaining set of
 %   neighbours is smaller than the given one.
 %
 %   [OPTIM_SOL, OPTIM_VAL] = LOCAL_OPT(START_POP, DIST, QUANT, MODE)
+% 
 %   INPUT:
 %       START_POP:  initial arrangement [AntArray]
 %       DIST:       distance from the array where the fitness function will
@@ -25,12 +27,13 @@
 %       OPTIM_VAL:  fitness of the optimal arrangement [double]
 %
 %   [...] = LOCAL_OPT(PATH) resumes the algorithm
+% 
 %   INPUT:
 %       PATH:   path to the folder containing the previous results
 %
 %   See also GA_2D FITNESS CHROM2MAT MAT2CHROM ANTARRAY
 
-%   Copyright 2016, Antoine Juckler. All rights reserved.
+%   Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
 
 function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
 
@@ -260,34 +263,6 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
                 
                 dial.terminate();
             end
-            % while i <= maxiter
-            %     dial.setSubString([num2str(i) ' on ' num2str(maxiter)]);
-            %     dial.terminate();
-            %     tmp_chrom = best_chrom;
-            %     tmp_chrom(pos(i)) = ~tmp_chrom(pos(i));
-
-            %     skip = knownNeighbour(visited_list, tmp_chrom);
-
-            %     if ~skip
-            %         tmp_visited{length(tmp_visited)+1} = tmp_chrom;
-            %         tmp = AntArray(chrom2mat(tmp_chrom, quanti), ...
-            %             [], [], [], opt_name, 0);
-
-            %         [loc_val tmp_alt_val] = fitness(tmp, dist, mode);
-
-            %          if loc_val > tmp_val
-            %             tmp_val = loc_val;
-            %             best = tmp;
-            %             alt_val = tmp_alt_val;
-            %         end;
-            %     end
-
-            %     i = i + 1;
-            %     if i == maxiter && tmp_val == best_val
-            %         maxiter = length(pos);
-            %     end;
-            %     dial.terminate();
-            % end;
             
             delete([start_pop 'savdata.mat']);
             
@@ -374,45 +349,6 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
                 
                 dial.terminate();
             end
-            
-            % % Run for rest
-            % dial.setSubString(['Subiteration ' num2str(pariter+1) ' of ' ...
-            %         num2str(pariter+1)]);
-            % structout = insideOpt(pariter*2*nworkers+1, maxiter, ...
-            %     best_chrom, pos, visited_list, params);
-            % [mval, mpos] = max(structout.tmp_vect);
-            % if mval > tmp_val
-            %     tmp_val = mval;
-            %     best = structout.tmp_pop{mpos};
-            %     alt_val = structout.alt_vect(mpos);
-            % end;
-            % for ii=1:length(structout.tmp_visited_in)
-            %     val = structout.tmp_visited_in{ii};
-            %     if ~isempty(val)
-            %         tmp_visited{length(tmp_visited)+1} = val;
-            %     end;
-            % end;
-            % dial.terminate();
-            
-            % % If no max found, run more
-            % if tmp_val == best_val
-            %     dial.setSubString(['Subiteration ' num2str(pariter+2) ' of ' ...
-            %         num2str(pariter+2)]);
-            %     structout = insideOpt(maxiter+1, length(pos), ...
-            %         best_chrom, pos, visited_list, params);
-            %     [mval, mpos] = max(structout.tmp_vect);
-            %     if mval > tmp_val
-            %         tmp_val = mval;
-            %         best = structout.tmp_pop{mpos};
-            %         alt_val = structout.alt_vect(mpos);
-            %     end;
-            %     for ii=1:length(structout.tmp_visited_in)
-            %         val = structout.tmp_visited_in{ii};
-            %         if ~isempty(val)
-            %             tmp_visited{length(tmp_visited)+1} = val;
-            %         end;
-            %     end;
-            % end;
 
             fname = sav_loc_state(best, tmp_visited, iter);
             progress_data{length(progress_data)+1} = [tmp_val alt_val];
@@ -509,7 +445,16 @@ function [optim_sol, optim_val] = local_opt(start_pop, dist, quanti, mode)
     close all;
 end
 
+%% Function to save the state of the algorithm
 function [fname fdir] = sav_loc_state(best, chrom_ls, iter)
+    % INPUT
+    %   best:       best arrangement
+    %   chrom_ls:   tested chromosome list
+    %   iter:       algorithm iteration
+    % OUTPUT
+    %   fname:      name of subfolder containing the results
+    %   fdir:       name of parent folder containing the results
+    
     config = 0;
     firstit = 0;
 
@@ -571,7 +516,14 @@ function [fname fdir] = sav_loc_state(best, chrom_ls, iter)
     fdir = prefix_folder_name(1:end-7);    
 end
 
+%% Function to check whether a chromosome has already been evaluated
 function skip = knownNeighbour(visited_list, tmp_chrom)
+    % INPUT
+    %   visited_list:   list of evaluated chromosomes
+    %   tmp_chrom:      chromosome to evaluate
+    % OUTPU
+    %   skip:           chromosome already evaluated (boolean)
+    
     skip = 0;
     for i=1:length(visited_list)
         if sum(visited_list{i} == tmp_chrom) == length(tmp_chrom)
@@ -581,13 +533,20 @@ function skip = knownNeighbour(visited_list, tmp_chrom)
     end;
 end
 
+%% Function to shuffle chromosome evaluation list
 function pairs = genPairs(chrom)
+    % INPUT
+    %   chrom:  neighbourhood
+    % OUTPUT
+    %   pairs:  list of positions to swap in the chromosome
+    
     pairs = 1:length(chrom);
 
     pairs = pairs(chrom ~= 0);
     pairs = pairs(randperm(length(pairs)));
 end
 
+%% Inner function to parallelise the optimisation process
 function structout = insideOpt(beginit, endit, best_chrom, pos, visited, params)
     quanti = params.quanti;
     dist = params.dist;

@@ -20,11 +20,12 @@
 %               it will be computed from the volume of the beam
 %               [default = 0]
 %   OUTPUT:
-%       WEIGHT: the fitness [Vm | m²]
+%       WEIGHT:     the fitness [Vm | m²]
+%       WEIGHT_ALT: fitness using the other mode [m² | Vm]
 %
-%   See also GA_2D ANTARRAY
+%   See also GA_2D ANTARRAY LOCAL_OPT
 
-%   Copyright 2016, Antoine Juckler. All rights reserved.
+%   Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
 
 function [weight, weight_alt] = fitness(ant, dist, mode)
     if nargin < 3

@@ -1,10 +1,17 @@
 function C = chrom2mat(chrom, quant)
-% Transforms a chromosome to its matrix representation
+%CHROM2MAT transforms a chromosome to its matrix representation
 %
+% C = CHROM2MAT(chrom, quant)
+% 
 % INPUT:
 %   chrom:  chromosome to be reshaped
-%   quant:  (optional) is the end matrix quantized?
+%   quant:  (optional) is the end matrix quantized? [default = true]
+% OUTPUT:
+%   C:      2D matrix representation of the chromosome
 %
+% See also MAT2CHROM GA_2D LOCAL_OPT
+
+% Copyright 2015-2016 Antoine JUCKLER. All rights reserved.
 
 if nargin < 2
     quant = 1;

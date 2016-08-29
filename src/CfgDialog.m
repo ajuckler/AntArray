@@ -1,12 +1,45 @@
+%CfgDialog  Class for displaying configuration dialog
+%
+%The configuration dialog permits to input the parameters inherent to a
+%class, for example AntArray.
+%
+%CfgDialog Properties
+%   handler         handler of the main configuration window
+%   ptr             handler of an invisible configuration window
+%   fields          list of parameters to be set
+%
+%CfgDialog Methods
+%   CfgDialog       constructor 
+%   waitClosing     wait for the closing of the dialog
+%   setDft          set default values for the fields
+%   getFields       get input data
+%   cancelAction    (static) action when pressing the cancel button
+%   confirmAction   (static) action when pressing the confirm button
+%   closeAction     (static) action when closing the dialog
+%
+%Use the DOC command for detailed explanations
+
+% Copyright 2015-2016, Antoine JUCKLER. All rights reserved
+
 classdef CfgDialog < handle
     
     properties (GetAccess='public', SetAccess='private')
-        handler;
-        ptr;
-        fields;
+        handler;    % Handler of the main dialog
+        ptr;        % Handler of an invisible dialog used to store data
+        fields;     % list of parameters to be set
     end;
     methods
+        %% Constructor
         function obj = CfgDialog(list)
+            %CFGDIALOG constructor
+            %
+            % obj = CFGDIALOG(list)
+            %
+            % INPUT
+            %   list:   list of field names
+            % OUTPUT
+            %   obj:    CfgDialog object
+            
             sizeW = [300 20*length(list)+50];
             screensize = get(0, 'ScreenSize');
             xpos = ceil((screensize(3)-sizeW(1))/2);
@@ -66,35 +99,78 @@ classdef CfgDialog < handle
             guidata(obj.handler, handles);
         end
         
+        %% Wait for action on main dialog window
         function waitClosing(obj)
+            %WAITCLOSING wait for an user action on the main dialog window
+            %
+            % [ ] = WAITCLOSING(obj)
+            %
+            % INPUT
+            %   obj:    CfgDialog object
+            %
+            % See also CANCELACTION CONFIRMACTION CLOSEACTION
+            
             waitfor(obj.handler);
         end
         
+        %% Set field default values
         function setDft(obj, dft)
-           fl = fieldnames(dft);
-           for i=1:length(fl)
-               if ~isfield(obj.fields, fl{i})
-                   dft = rmfield(dft, fl{i});
-               end;
-           end;
-           
-           els = guidata(obj.handler);
-           fl = fieldnames(dft);
-           for i=1:length(fl)
-               if isfield(els, fl{i})
-                   set(els.(fl{i}), 'Value', dft.(fl{i}));
-               end;
-           end;
-           drawnow;
+            %SETDFT set default values of the fields to be input on the
+            %dialog
+            %
+            % [ ] = SETDTF(obj, dft)
+            %
+            % INPUT
+            %   obj:    CfgDialog object
+            %   dft:    structure of field name-value pairs
+            
+            fl = fieldnames(dft);
+            for i=1:length(fl)
+                if ~isfield(obj.fields, fl{i})
+                    dft = rmfield(dft, fl{i});
+                end;
+            end;
+
+            els = guidata(obj.handler);
+            fl = fieldnames(dft);
+            for i=1:length(fl)
+                if isfield(els, fl{i})
+                    set(els.(fl{i}), 'Value', dft.(fl{i}));
+                end;
+            end;
+            drawnow;
         end
         
+        %% Get input values
         function vals = getFields(obj)
+            %GETFIELDS get the input values
+            %
+            % The invisible figure containing the input data will be
+            % deleted in the process.
+            %
+            % vals = getFields(obj)
+            %
+            % INPUT
+            %   obj:    CfgDialog object
+            % OUTPUT
+            %   vals:   struct of field name-value pairs
+            
             vals = get(obj.ptr, 'UserData');
             close(obj.ptr);
         end;
     end;
     methods (Static)
+        %% Action when pressing the cancel button
         function cancelAction(hObject, callbackdata, obj)
+            %CANCELACTION cancel all the input data and close the window
+            %
+            % [ ] = CANCELACTION(hObject, callbackdata, obj)
+            %
+            % INPUT
+            %   hObject:        handler of object calling the function
+            %   callbackdata:   additional callback information
+            %   obj:            CfgDialog object
+            
             fl = fieldnames(obj.fields);
             for i=1:length(fl)
                 obj.fields.(fl{i}) = [];
@@ -103,8 +179,19 @@ classdef CfgDialog < handle
             set(obj.ptr, 'UserData', obj.fields);
             delete(obj.handler);
         end
-
+        
+        %% Action when pressing the confirm button
         function confirmAction(hObject, callbackdata, obj)
+            %CONFIRMACTION copy the input data to the invisible handle and
+            %close the window
+            %
+            % [ ] = CONFIRMACTION(hObject, callbackdata, obj)
+            %
+            % INPUT
+            %   hObject:        handler of object calling the function
+            %   callbackdata:   additional callback information
+            %   obj:            CfgDialog object
+            
             set(obj.handler, 'UserData', 1);
             els = guidata(obj.handler);
             fl = fieldnames(els);
@@ -137,7 +224,17 @@ classdef CfgDialog < handle
             delete(obj.handler);
         end
         
+        %% Action when closing the window
         function closeAction(hObject, callbackdata, obj)
+            %CLOSEACTION calls CANCELACTION and close the window
+            %
+            % [ ] = CLOSEACTION(hObject, callbackdata, obj)
+            %
+            % INPUT
+            %   hObject:        handler of object calling the function
+            %   callbackdata:   additional callback information
+            %   obj:            CfgDialog object
+
             if isempty(get(obj.handler, 'UserData'))
                 CfgDialog.cancelAction(hObject, callbackdata, obj);
             end;

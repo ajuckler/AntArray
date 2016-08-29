@@ -1,20 +1,21 @@
-%CONVERTFITNESS convert the fitness metric
-%
-% Convert the fitness metric from Vm to m² and inversely.
-%
-% [ ] = CONVERTFITNESS(infile, dist, inmode, evth)
-%
-% INPUT
-%   inname: input fitness file name
-%   dist:   distance from the array where to compute the fitness [mm]
-%   inmode: input fitness mode (0 for volume, 1 for surface)
-%   evth:   [optional] convert only max or everything (default=0)
-%
-% See also FITNESS ANTARRAY
-
-% Copyright 2016, Antoine Juckler. All rights reserved.
-
 function convertFitness(inname, dist, inmode, evth)
+    %CONVERTFITNESS convert the fitness metric
+    %
+    % Convert the fitness metric from Vm to m² and inversely.
+    %
+    % [ ] = CONVERTFITNESS(infile, dist, inmode, evth)
+    %
+    % INPUT
+    %   inname: input fitness file name
+    %   dist:   distance from the array where to compute the fitness [mm]
+    %   inmode: input fitness mode (0 for volume, 1 for surface)
+    %   evth:   (optional) convert only max (0) or everything (1)
+    %           [default = 0]
+    %
+    % See also FITNESS ANTARRAY GA_2D LOCAL_OPT
+
+    % Copyright 2016, Antoine JUCKLER. All rights reserved.
+    
     if nargin < 4 || isempty(evth)
         evth = 0;
     else
@@ -270,7 +271,20 @@ function convertFitness(inname, dist, inmode, evth)
     parallel_pool('stop');
 end
 
+%% Function to directly get the data from previous simulations (if available)
 function newdata = convertFromFile(GA_fold, cfg_path, dirname)
+    %CONVERTFROMFILE get all the data from previous simulations, provided
+    %they are available
+    %
+    % newdata = CONVERTFROMFILE(GA_folg, cfg_path, dirname)
+    %
+    % INPUT
+    %   GA_fold:    folder containing GA results
+    %   cfg_path:   path to cfg-file
+    %   dirname:    save folder name
+    % OUTPUT
+    %   newdata:    results using the other fitness function
+    
     it = 0;
     while exist([GA_fold '/' num2str(it) '/fitness_conv.dat'], 'file')
         it = it+1;

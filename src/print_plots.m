@@ -1,8 +1,16 @@
-%
-% Copyright 2015, Antoine JUCKLER
-%
-
 function print_plots(h, path) % h must be gcf from plot
+    %PRINT_PLOTS exports the plots to pdf
+    %
+    % The function will create both a pdf and a fig file.
+    %
+    % [ ] = PRINT_PLOTS(h, path)
+    %
+    % INPUT
+    %   h:      handler to plot object
+    %   path:   desired save name
+    
+    % Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
+    
     date_v = datevec(date);
     dirpath = cell(1,3);
     for i=1:3

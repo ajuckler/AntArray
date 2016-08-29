@@ -1,12 +1,39 @@
+%WaitDialog  Class for displaying current optimisation status
+%
+%WaitDialog Properties
+%   handler         handler of the main window
+%   main_string     main string to display
+%   sub_string      additional information
+%
+%WaitDialog Methods
+%   WaitDialog      constructor 
+%   delete          delete the object
+%   terminate   	check whether abort button has been pressed
+%   setMainString   set main string
+%   setSubString    set additional information string
+%   abort           (static) action when pressing the abort button
+%
+%Use the DOC command for detailed explanations
+
+% Copyright 2015-2016, Antoine JUCKLER. All rights reserved
+
 classdef WaitDialog < handle
     
     properties (GetAccess='public', SetAccess='private')
-        handler;
-        main_string;
-        sub_string;
+        handler;        % Handler of the main window
+        main_string;    % main string
+        sub_string;     % additional information string
     end;
     methods
-        function obj = WaitDialog()
+        %% Constructor
+        function obj = WaitDialog()            
+            %WAITDIALOG constructor
+            %
+            % obj = WAITDIALOG()
+            %
+            % OUTPUT
+            %   obj:    WaitDialog object
+            
             sizeW = [300 170];
             screensize = get(0, 'ScreenSize');
             xpos = ceil((screensize(3)-sizeW(1))/2);
@@ -63,28 +90,76 @@ classdef WaitDialog < handle
             set(obj.handler, 'Visible', 'on');
             drawnow;
         end;
+        
+        %% Delete object
         function delete(obj)
+            %DELETE delete the window object
+            %
+            % [ ] = DELETE(obj)
+            %
+            % INPUT
+            %   obj:    WaitDialog object
+            
             delete(obj.handler);
         end;
+        
+        %% Check whether abort button has been pressed
         function terminate(obj)
+            %TERMINATE check whether the abort button has been pressed,
+            %so yes, the object is deleted and an exception is thrown
+            %
+            % [ ] = TERMINATE(obj)
+            %
+            % INPUT
+            %   obj:    WaitDialog object
+            
             if ~getappdata(obj.handler, 'abort')
                 return;
             end;
             delete(obj);
             throw(MException('MyERR:Terminated', 'Operation aborted by user'));
         end;
+        
+        %% Set main string
         function setMainString(obj, str)
+            %SETMAINSTRING set the main information string, the additional
+            %information string is cleared in the process
+            %
+            % [ ] = SETMAINSTRING(obj, str)
+            %
+            % INPUT
+            %   obj:    WaitDialog object
+            %   str:    main information string
+            
             set(obj.main_string, 'String', str);
             set(obj.sub_string, 'String', '');
             drawnow;
         end;
+        
+        %% Set substring
         function setSubString(obj, str)
+            %SETSUBSTRING set the additional information string
+            %
+            % [ ] = SETSUBSTRING(obj, str)
+            %
+            % INPUT
+            %   obj:    WaitDialog object
+            %   str:    additional information string
+            
             set(obj.sub_string, 'String', str);
             drawnow;
         end;
     end;
     methods (Static, Access='public')
+        %% Action when pressing the abort button
         function abort(~, ~, obj)
+            %ABORT set the abort flag high
+            %
+            % [ ] = ABORT(~, ~, obj)
+            %
+            % INPUT
+            %   obj:    WaitDialog object
+            
             setappdata(obj.handler, 'abort', 1);
         end;
     end;

@@ -1,9 +1,17 @@
 function chrom = mat2chrom(mat, quant)
-% Transforms a matrix into a chromosome
+%MAT2CHROM encode a matrix into its corresponding chromosome
 %
+% chrom = MAT2CHROM(mat, quant)
+% 
 % INPUT:
 %   mat:    matrix to be encoded
+%   quant:  (optional) is the matrix quantized? [default = true]
+% OUTPUT:
+%   chrom:  1D chromosome
 %
+% See also CHROM2MAT GA_2D LOCAL_OPT
+
+% Copyright 2015-2016 Antoine JUCKLER. All rights reserved.
 
 if nargin < 2
     quant = 0;

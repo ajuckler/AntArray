@@ -1,7 +1,7 @@
 %GA_2D Optimize the array arrangement using a genetic algorithm
 %
 %   The algorithm parameters are hard-coded as follow:
-%   chromosome size:    
+%   chromosome side length:    
 %       if QUANT(see further):  1/4 of matrix size in START_POP or of
 %                               AntArray default
 %       if ~QUANT:              1/2 of matrix size in START_POP or of 
@@ -35,9 +35,9 @@
 %   INPUT:
 %       PATH:   path to the folder containing the previous results
 %
-%   See also LOCAL_OPT FITNESS GENCROSSOVERPATTERN CHROM2MAT MAT2CHROM
+%   See also LOCAL_OPT FITNESS CHROM2MAT MAT2CHROM
 
-%   Copyright 2016, Antoine Juckler. All rights reserved.
+%   Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
 
 function [optim_sol, optim_val] = ga_2D(dist, start_pop, quant, mode)
 
@@ -441,14 +441,17 @@ try
 
             % Mutation
             % --------
-%             for j=1:trn_sz
-%                 mask = rand(chrom_sz);
-%                 mask = (mask <= mut_prob);
-%                 mut_chrom = chroms{j};
-%                 mut_chrom(mask == 1) = ...
-%                     abs(mut_chrom(mask == 1) - 1);
-%                 chroms{j} = mut_chrom;
-%             end;
+            % % Pure random mutation positions
+            % for j=1:trn_sz
+            %     mask = rand(chrom_sz);
+            %     mask = (mask <= mut_prob);
+            %     mut_chrom = chroms{j};
+            %     mut_chrom(mask == 1) = ...
+            %         abs(mut_chrom(mask == 1) - 1);
+            %     chroms{j} = mut_chrom;
+            % end;
+            
+            % Mutation positions in clusters
             for j=1:trn_sz
                 mask = genMask(chroms{j}, round(chrom_sz/16));
                 mask2 = rand(1, numel(mask(mask == 1)));
@@ -459,54 +462,45 @@ try
                     abs(mut_chrom(mask == 1) - 1);
                 chroms{j} = mut_chrom;
             end;
-%             for j=1:trn_sz
-%                 mask = rand(chrom_sz);
-%                 mask = (mask <= mut_prob);
-%                 tot_els = numel(find(mask));
-%                 if tot_els > 1
-%                     nb_els = tot_els;
-%                     mask = zeros(chrom_sz);
-%                     while nb_els > 0
-%                         tpmask = zeros(chrom_sz);
-%                         % Gen start pos
-%                         xpos = randi([1 chrom_sz]);
-%                         ypos = randi([1 chrom_sz]);
-% 
-%                         % Gen height
-%                         maxh = min(nb_els, chrom_sz-ypos+1);
-%                         height = randi([1 maxh]);
-% 
-%                         % Gen width
-%                         maxw = min(floor(nb_els/height), chrom_sz-xpos+1);
-%                         width = randi([1 maxw]);
-% 
-%                         % Rotate
-%                         tpmask(ypos:ypos+height-1, xpos:xpos+width-1) = 1;
-%                         if rand < .5
-%                             tpmask = tpmask';
-%                         end;
-% 
-%                         % Adapt
-%                         mask(tpmask == 1) = 1;
-%                         nb_els = tot_els - numel(find(mask));
-%                     end;
-%                 end                  
-%                 mut_chrom = chroms{j};
-%                 mut_chrom(mask == 1) = ...
-%                     abs(mut_chrom(mask == 1) - 1);
-%                 chroms{j} = mut_chrom;
-%             end;
-%             if rand <= mut_prob
-%                 pos = randi(chrom_sz*chrom_sz, 1);  % Mutation position
-%                 chrom_nb = randi([1 trn_sz], 1);    % Affected chromosome
-%                 mut_chrom = chroms{chrom_nb};
-%                 mut_chrom(pos) = ~mut_chrom(pos);
-%                 chroms{chrom_nb} = mut_chrom;
-%                 % clearvars mut_chrom chrom_nb pos
-%                 mut_chrom = [];
-%                 chrom_nb = [];
-%                 pos = [];
-%             end;
+            
+            % % Mutation positions in the neighbourhood of the chromosome
+            % for j=1:trn_sz
+            %     mask = rand(chrom_sz);
+            %     mask = (mask <= mut_prob);
+            %     tot_els = numel(find(mask));
+            %     if tot_els > 1
+            %         nb_els = tot_els;
+            %         mask = zeros(chrom_sz);
+            %         while nb_els > 0
+            %             tpmask = zeros(chrom_sz);
+            %             % Gen start pos
+            %             xpos = randi([1 chrom_sz]);
+            %             ypos = randi([1 chrom_sz]);
+            %
+            %             % Gen height
+            %             maxh = min(nb_els, chrom_sz-ypos+1);
+            %             height = randi([1 maxh]);
+            % 
+            %             % Gen width
+            %             maxw = min(floor(nb_els/height), chrom_sz-xpos+1);
+            %             width = randi([1 maxw]);
+            % 
+            %             % Rotate
+            %             tpmask(ypos:ypos+height-1, xpos:xpos+width-1) = 1;
+            %             if rand < .5
+            %                 tpmask = tpmask';
+            %             end;
+            % 
+            %             % Adapt
+            %             mask(tpmask == 1) = 1;
+            %             nb_els = tot_els - numel(find(mask));
+            %         end;
+            %     end                  
+            %     mut_chrom = chroms{j};
+            %     mut_chrom(mask == 1) = ...
+            %         abs(mut_chrom(mask == 1) - 1);
+            %     chroms{j} = mut_chrom;
+            % end;
 
             % Save new pop & evaluate
             % -----------------------
@@ -563,8 +557,6 @@ try
             last_max = last_data(:, 1);
             if ~isempty(last_max(abs(last_max - last_max(end))>10^-6))
                 off = off + off_iter;
-%                 cfg(5) = max_iter + off;
-%                 save_state(cfg, [], iter);
             end;
         end;
     end;
@@ -628,4 +620,294 @@ hold off;
 print_plots(gcf, ['fitness_' fname]);
 close all
     
+end
+
+%% Function to generate the mask for crossover
+function patrn = genCrossoverPattern(side_lg, quant)
+    %GENCROSSOVERPATTERN generates mask for chromosome 1-point crossover
+    %
+    % This function generates a mask that will be used for chromosome
+    % crossover. The mask correspond to 1-point crossover in 2D: when the
+    % full matrix is recontructed from the chromosome, the mask will 
+    % delimit 2 contiguous regions.
+    %
+    % PATTERN = GENCROSSOVERPATTERN(SIDE_LEN, QUANT)
+    % INPUT:
+    %     SIDE_LEN:   side length of the 2D chromosome
+    %     QUANT:      (optional) is the chromosome quantized? [default = 1]
+    % OUTPUT:
+    %     PATTERN:    matrix containing the mask for 2D 1-point crossover
+    
+    if nargin < 2
+        quant = 1;
+    end;
+
+    if mod(side_lg, 2) ~= 0
+        error 'side_lg is not an even number';
+    elseif side_lg < 5
+        error 'side_lg must be greater than 4';
+    end;
+
+    % Theoretical size of matrix (effective elements generated)
+    if quant
+        step = 2;
+    else
+        step = 1;
+    end;
+
+    th_side = side_lg/step;
+    th_diff = ceil(th_side/8);
+    mat = zeros(th_side);
+    gen_max_off = th_side;
+    
+    maxit = 20;
+
+    % Generate theoretical pattern
+    prev_off = randi([2 th_side]);
+    prev_lgt = th_side - prev_off + 1;
+    mat(end, prev_off:end) = 1;
+    count_l = 1;
+    count_r = 1;
+    it1 = 0;
+    it2 = 0;
+    
+    maxi = randi([th_diff th_side-2]);
+    i = 1;
+    while i <= maxi
+        min_off = prev_off - th_diff;
+        min_off = max(min_off, 2);
+        
+        max_off = prev_off + th_diff;
+        if prev_lgt <= th_diff
+            max_off = min(max_off, prev_off + prev_lgt - 1);
+        end;
+        max_off = min(max_off, gen_max_off);
+        
+        off = randi([min_off, max_off]);
+        cond = (count_l == th_diff && off == prev_off) ...
+            || (prev_lgt == 1 && count_r == th_diff && off == prev_off + prev_lgt) ...
+            || (off == gen_max_off ...
+                && (count_r >= th_diff-1 || count_l >= th_diff-1)) ...
+            || (off == prev_off && prev_lgt == 2 ...
+                && count_r >= th_diff-1 && count_l >= th_diff-1 ...
+                && prev_off+prev_lgt == gen_max_off+1);
+        while cond && it1 < maxit
+            off = randi([min_off, max_off]);
+            cond = (count_l == th_diff && off == prev_off) ...
+            || (prev_lgt == 1 && count_r == th_diff && off == prev_off + prev_lgt) ...
+            || (off == gen_max_off ...
+                && (count_r >= th_diff-1 || count_l >= th_diff-1)) ...
+            || (off == prev_off && prev_lgt == 2 ...
+                && count_r >= th_diff-1 && count_l >= th_diff-1 ...
+                && prev_off+prev_lgt == gen_max_off+1);
+            it1 = it1 + 1;
+        end;
+        
+        max_lgt = prev_off + prev_lgt - off + th_diff;
+        max_lgt = min(gen_max_off - off + 1, max_lgt);
+        
+        min_lgt = prev_off + prev_lgt - th_diff - off;
+        if off < prev_off
+            min_lgt = max(prev_off - off + 1, min_lgt);
+        end;
+        min_lgt = max(1, min_lgt);
+        
+        lgt = randi([min_lgt, max_lgt]);
+        cond = (count_r == th_diff && off + lgt == prev_off + prev_lgt) ...
+                || (count_l >= th_diff-1 && lgt == 1 && off == prev_off);
+        while gen_max_off ~= th_side && cond && it2 < maxit
+            lgt = randi([min_lgt, max_lgt]);
+            cond = (count_r == th_diff && off + lgt == prev_off + prev_lgt) ...
+                || (count_l >= th_diff-1 && lgt == 1 && off == prev_off);
+            it2 = it2 + 1;
+        end;
+
+        mat(end-i, off:off+lgt-1) = 1;
+        
+        if it1 >= maxit || it2 >= maxit
+            error 'Infinite loop when generating crossover pattern';
+        else
+            it1 = 0;
+            it2 = 0;
+        end;
+        
+        if off == prev_off
+            count_l = count_l + 1;
+        else
+            count_l = 1;
+        end;
+        if off+lgt == prev_off+prev_lgt && off+lgt-1 ~= th_side
+            count_r = count_r + 1;
+        else
+            count_r = 1;
+        end;
+
+        prev_off = off;
+        prev_lgt = lgt;
+
+        % If there is a blank on both sides of the line, reduce max length
+        if gen_max_off == th_side && off+lgt-1 < th_side
+            gen_max_off = gen_max_off - 1;
+        end;
+        
+        i = i+1;
+    end;
+
+    % Quantize
+    if quant
+        patrn = zeros(side_lg);
+        mat = reshape(mat, 1, numel(mat));
+        mat = repmat(mat, 2, 1);
+        mat = reshape(mat, side_lg, side_lg/step);
+        patrn(:, 1:2:end) = mat;
+        patrn(:, 2:2:end) = mat;
+    else
+        patrn = mat;
+    end;
+
+    % Vertical or horizontal
+    if rand < 0.5
+        patrn = patrn';
+    end;
+
+end
+
+%% Function to generate clusters
+function ptrns = genLayout(side, nb)
+    %GENLAYOUT Create random grid matrices
+    %
+    %   ptrns = GENLAYOUT(side, num)
+    %
+    %   INPUT:
+    %       side:   side length of the matrix
+    %       num:    number of matrices to generate
+    %   OUTPUT:
+    %       ptrns:  cell array containing the generated matrices
+    
+    if nargin < 2 || isempty(nb)
+        nb = 1;
+    end;
+    if side < 1 || nb < 1
+        error('MyERR:Invalid', 'Invalid input argument');
+    end;
+    
+    ptrns = cell(1, nb);
+    
+    side1 = side/2;
+    side2 = side/4;
+    
+    for i=1:nb
+        tmp = zeros(side);
+        
+        ypos = randi([1 side2]);
+        while ypos <= side
+            xpos = randi([1 side1]);
+            while xpos <= side
+                width = min(randi([1 side2]), side-xpos+1);
+                height = min(randi([1 side2]), side-ypos+1);
+
+                tmp(ypos:ypos+height-1, xpos:xpos+width-1)=1;
+                xpos = xpos+width+randi([1 side1]);
+            end;
+            ypos = ypos+randi([1 side2]);
+        end;
+        
+        ptrns{i} = tmp;
+    end;
+end
+
+%% Function to save current state of the algorithm
+function fname = save_state(pop, eva, eva_c, iter)
+    % Save current state of the optimization algorithm
+    %
+    % INPUT:
+    %   pop:    population cell array OR config data
+    %   eva:    fitness vector
+    %   eva_c:  fitness vector (of the other fitness mode)
+    %   iter:   iteration
+    % OUTPUT
+    %   fname:  name of subfolder containing the saved data
+
+    if nargin == 1 && length(pop) == numel(pop)
+        config = 1;
+        iter = 0;
+    elseif isempty(eva) && length(pop) == numel(pop)
+        config = 1;
+    else
+        config = 0;
+    end;
+    if nargin == 3
+        iter = eva_c;
+        eva_c = [];
+    end;
+
+    if ~config
+        if numel(pop) ~= numel(eva)
+            error 'pop and eva have different size';
+        end;
+        if numel(pop) ~= length(pop)
+            pop = reshape(pop, 1, numel(pop));
+        end;
+        if numel(eva) ~= length(eva)
+            eva = reshape(eva, 1, numel(eva));
+        end;
+        if ~isempty(eva_c) && numel(eva_c) ~= length(eva_c)
+            eva_c = reshape(eva_c, 1, numel(eva_c));
+        end;
+
+        if size(eva, 1) ~= 1
+            eva = eva';
+        end;
+        if ~isempty(eva_c) && size(eva_c, 1) ~= 1
+            eva_c = eva_c';
+        end;
+    end;
+
+    persistent prefix_folder_name
+
+    % Determine sav folder
+    if iter < 0
+        error 'Invalid iter argument';
+    elseif ispref('ga_2D', 'save_folder')
+        prefix_folder_name = getpref('ga_2D', 'save_folder');
+        rmpref('ga_2D', 'save_folder');
+    elseif config && iter == 0
+        prefix_folder_name = datestr(now, 'yyyymmdd/HHMMSS/');
+    end;
+
+    if ~config
+        dir = [prefix_folder_name num2str(iter) '/'];
+        if ~exist(dir, 'dir')
+            mkdir(dir);
+        end;
+
+        % Generate individual-fitness array
+        pairs = [1:length(pop); eva]';
+        save([dir 'fitness.dat'], 'pairs', '-ASCII');
+        clearvars pairs
+
+        if ~isempty(eva_c)
+            pairs_c = [1:length(pop); eva_c]';
+            [tmp_val, pos] = max(pairs_c(:,2));
+            pairs_c(pos,:) = pairs_c(2,:);
+            pairs_c(2, :) = pairs_c(1, :);
+            pairs_c(1, :) = [pos tmp_val];
+
+            save([dir 'fitness_conv.dat'], 'pairs_c', '-ASCII');
+            clearvars pairs_c
+        end;
+
+        % Save all array arrangements
+        for i=1:length(pop)
+            arrangmt = AntArray.quantize(pop{i}.M, 1);
+            save([dir 'arrangement_' num2str(i) '.dat'], 'arrangmt', '-ASCII');
+        end;
+
+        fname = prefix_folder_name(end-6:end-1);
+    else
+        if ~exist(prefix_folder_name, 'dir')
+            mkdir(prefix_folder_name);
+        end;
+        save([prefix_folder_name 'config.ga_2D'], 'pop', '-ASCII');
+    end;
 end

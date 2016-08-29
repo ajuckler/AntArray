@@ -1,8 +1,16 @@
-%
-% Copyright 2015, Antoine JUCKLER
-%
-
 function export_dat(h, path, mode)
+    %EXPORT_DAT export data from plots or variable to file
+    %
+    % [ ] = EXPORT_DAT(h, path, mode)
+    %
+    % INPUT
+    %   h:      handler to plot or variable to save
+    %   path:   save name
+    %   mode:   (optional) type of save: 0 for plot, 1 for variable
+    %           [default = 0]
+    
+    % Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
+    
     if nargin < 3
         mode = 0;
     else

@@ -1,21 +1,22 @@
-%PARALLEL_POOL starts or stops parallel pool
-%
-%   RES = PARALLEL_POOL(MODE)
-%   INPUT:
-%       MODE:   'start' to start the pool
-%               'stop' to stop the pool
-%               'status' to get number of workers
-%               If the pool was already started/stopped, nothing will
-%               happen
-%   OUTPUT:
-%       RES:    depends on the inputted mode
-%               if mode is 'start' or 'stop':   0 for success
-%                                               -1 for error
-%               if mode is 'status':            number of workers
-
-% Copyright 2016, Antoine Juckler. All rights reserved
-
 function res = parallel_pool(mode)
+    %PARALLEL_POOL starts, stops or get the number of workers in a parallel
+    %pool
+    %
+    %   RES = PARALLEL_POOL(MODE)
+    %   INPUT:
+    %       MODE:   'start' to start the pool
+    %               'stop' to stop the pool
+    %               'status' to get number of workers
+    %               If the pool was already started/stopped, nothing will
+    %               happen
+    %   OUTPUT:
+    %       RES:    depends on the inputted mode
+    %               if mode is 'start' or 'stop':   0 for success
+    %                                               -1 for error
+    %               if mode is 'status':            number of workers
+
+    % Copyright 2015-2016, Antoine JUCKLER. All rights reserved
+    
     persistent poolobj;
 
     if strcmp(mode, 'start')
