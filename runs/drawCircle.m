@@ -1,14 +1,16 @@
-%
-% Copyright 2016, Antoine JUCKLER
-%
-
 function arr = drawCircle(dims, r, t)
-% Generate array of which elements are forming a disk
+%DRAWCIRCLE generates array with elements forming a (hollow) circle
+%
+% arr = DRAWCIRCLE(dims, r, t)
 %
 % INPUT:
 %   dims:   Dimensions of the array
 %   r:      External radius of the disk
 %   t:      [optional] Internal radius of the disk
+% OUPUT
+%   arr:    2D binary matrix
+
+% Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
 
 
 if nargin < 3 || t == 0

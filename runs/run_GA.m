@@ -1,4 +1,20 @@
 function run_GA(start_pop, dist, mode, quant)
+    %RUN_GA executes the genetic algorithm with the given parameters
+    %
+    % [ ] = RUN_GA(start_pop, dist, mode, quant)
+    %
+    % INPUT
+    %   start_pop:  initial population OR dimension of the antenna array
+    %   dist:       (optional) distance where optimisation will be executed
+    %               [mm, default = 2000, 5000 and 10000 successively]
+    %   mode:       (optional) fitness mode [default = 0 and 1
+    %               successively]
+    %   quant:      (optional) whether the array is quantized [default = 0
+    %               and 1 successively]
+    %
+    % See also GA_2D FITNESS
+    
+    % Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
 
     if ~exist('dist', 'var') || isempty(dist)
         dist = [2000, 5000, 10000];

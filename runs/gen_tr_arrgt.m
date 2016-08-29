@@ -1,18 +1,19 @@
-%GEN_TR_ARRGT generates the two/four triangle arrangement with specified
-%dimension
-%
-%   ARR = GEN_TR_ARRGT(DIM, MODE, REM)
-%   INPUT:
-%       DIM:    dimension of the array
-%       MODE:   number of triangles (2 or 4)
-%       REM:    (optional) number of lines to remove [default = 0]
-%   OUTPUT:
-%       ARR:    the generated binary array
-%
-
-% Copyright 2016, Antoine Juckler. All rights reserved
-
 function arr = gen_tr_arrgt(dim, mode, rem)
+    %GEN_TR_ARRGT generates the two/four triangle arrangement with specified
+    %dimension
+    %
+    % ARR = GEN_TR_ARRGT(DIM, MODE, REM)
+    %
+    % INPUT:
+    %   DIM:    dimension of the array
+    %   MODE:   number of triangles (2 or 4)
+    %   REM:    (optional) number of lines to remove [default = 0]
+    % OUTPUT:
+    %   ARR:    the generated binary array
+    %
+
+    % Copyright 2015-2016, Antoine JUCKLER. All rights reserved
+    
     if nargin < 3
         rem = 0;
     else

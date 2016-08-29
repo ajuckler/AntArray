@@ -1,8 +1,5 @@
-% ant = AntArray(ones(10), 60500, [], .64, [], 0);
-% ant = ant.setName('temp_test');
-% ant.genPattern(200, 500, 'YZ', 10);
-
 function genSteeredArrays(name)
+    % Generate antenna array arrangements consisting of focused sub-arrays
 
     if isempty(name)
         error 'NAME parameter is required';

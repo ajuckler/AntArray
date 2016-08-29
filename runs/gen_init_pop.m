@@ -1,31 +1,44 @@
 function gen_init_pop(nb, model)
-if nargin < 1 || isempty(nb)
-    nb = 64;
-end
-if nb == 64 && (nargin < 2 || isempty(model))
-    model = 1;
-elseif ~isempty(model)
-    model = model > 0;
-end;
-
-if nb == 64
-    if model == 1
-        rem = [9 4 9 22];
-    else
-        rem = [9 9 9 22];
+    %GEN_INIT_POP generates initial populations for the GA algorithm
+    %
+    % [ ] = GEN_INIT_POP(nb, model)
+    %
+    % INPUT
+    %   nb:     side length of the antenna array
+    %   model:  (boolean, only for 64x64) whether to use the old model for
+    %           geometries based on triangles (0 = old, 1 = new)
+    %           [default = 1]
+    
+    % Copyright 2015-2016, Antoine JUCKLER. All rights reserved.
+    
+    if nargin < 1 || isempty(nb)
+        nb = 64;
+    end
+    if nb == 64 && (nargin < 2 || isempty(model))
+        model = 1;
+    elseif ~isempty(model)
+        model = model > 0;
     end;
-elseif nb == 32
-    rem = [0 4 5 8];
-elseif nb == 16
-    rem = [0 0 0 0];
-elseif nb == 8
-    rem = [0 0 0 0];
-else
-    error 'Invalid input argument';
-end;
 
-% Squares 2
-rem_els = rem(1);
+    if nb == 64
+        if model == 1
+            rem = [9 4 9 22];
+        else
+            rem = [9 9 9 22];
+        end;
+    elseif nb == 32
+        rem = [0 4 5 8];
+    elseif nb == 16
+        rem = [0 0 0 0];
+    elseif nb == 8
+        rem = [0 0 0 0];
+    else
+        error 'Invalid input argument';
+    end;
+
+    % Squares 2
+    % ---------
+    rem_els = rem(1);
     arr = AntArray(zeros(nb), 60500, [], 0.84, [], 0);
     arr = arr.setName(['sq2_' num2str(nb) '_init']);
 
@@ -35,8 +48,9 @@ rem_els = rem(1);
     arr = arr.adaptArray(tmp, 100000, 0, 0);
     arr.plotAntArray();
 
-% Triangles
-rem_els = rem(2);
+    % Triangles
+    % ---------
+    rem_els = rem(2);
     arr = AntArray(zeros(nb), 60500, [], 0.84, [], 0);
     if nb == 64 && model == 0
         arr = arr.setName(['tr_' num2str(nb) '_60']);
@@ -73,8 +87,9 @@ rem_els = rem(2);
 
     arr.plotAntArray();
 
-% Triangles 2
-rem_els = rem(3);
+    % Triangles 2
+    % -----------
+    rem_els = rem(3);
     arr = AntArray(zeros(nb), 60500, [], 0.84, [], 0);
     if nb==64 && model == 0
         arr = arr.setName(['tr2_' num2str(nb) '_60']);
@@ -112,8 +127,9 @@ rem_els = rem(3);
     arr.plotAntArray();
 
 
-% Circles
-rem_els = rem(4);
+    % Circles
+    % -------
+    rem_els = rem(4);
     arr = AntArray(zeros(nb), 60500, [], 0.84, [], 0);
     arr = arr.setName(['circ_' num2str(nb) '_init']);
 
@@ -121,3 +137,5 @@ rem_els = rem(4);
     tmp = drawCircle(nb, nb/2, rem_els);
     arr = arr.adaptArray(tmp, 100000, 0, 0);
     arr.plotAntArray();
+    
+end

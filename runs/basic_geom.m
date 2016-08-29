@@ -1,4 +1,6 @@
 function basic_geom(name)
+    %BASIC_GEOM generates antenna arrangements and electric field patterns
+    %of basic geometries
 
     if isempty(name)
         error 'NAME parameter is required';

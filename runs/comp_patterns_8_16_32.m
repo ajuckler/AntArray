@@ -1,3 +1,6 @@
+% Script to compare 8x8, 16x16 and 32x32 array arrangements based on basic 
+% geometries depending on the number of removed elements
+
 clear
 
 parallel_pool('start');

@@ -1,5 +1,8 @@
 function basic_geom_comp(name)
-
+    %BASIC_GEOM_COMP generates antenna arrangements and electric field
+    %patterns of basic geometries for different configurations (number of 
+    %removed elements, inter-element spacing, frequency, quantization)
+    
     if isempty(name)
         error 'NAME parameter is required';
     elseif iscell(name)

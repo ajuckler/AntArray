@@ -1,17 +1,17 @@
-%GEN_SQ_ARRGT generates the double square arrangement with specified
-%dimension
-%
-%   ARR = GEN_SQ_ARRGT(DIM, REM)
-%   INPUT:
-%       DIM:    dimension of the array
-%       REM:    (optional) number of lines to remove [default = 0]
-%   OUTPUT:
-%       ARR:    the generated binary array
-%
-
-% Copyright 2016, Antoine Juckler. All rights reserved
-
 function arr = gen_sq_arrgt(dim, rem_els)
+    %GEN_SQ_ARRGT generates the double square arrangement with specified
+    %dimension
+    %
+    % ARR = GEN_SQ_ARRGT(DIM, REM)
+    %
+    % INPUT:
+    %   DIM:    dimension of the array
+    %   REM:    (optional) number of lines to remove [default = 0]
+    % OUTPUT:
+    %   ARR:    2D binary matrix
+
+    % Copyright 2015-2016, Antoine JUCKLER. All rights reserved
+
     if nargin < 2
         rem_els = 0;
     else
